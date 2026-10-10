@@ -22,7 +22,19 @@ download() {
         return 0
     fi
     echo "  [GET] $url"
-    wget -q --show-progress --tries=3 --timeout=30 -O "$output" "$url"
+    # Retry up to 5 times with exponential backoff
+    local tries=5
+    local delay=5
+    for i in $(seq 1 $tries); do
+        if wget -q --show-progress --timeout=30 -O "$output" "$url"; then
+            return 0
+        fi
+        echo "  [RETRY $i/$tries] Failed, waiting ${delay}s..."
+        sleep $delay
+        delay=$((delay * 2))
+    done
+    echo "  [FAIL] Download failed after $tries attempts: $url"
+    return 1
 }
 
 # Main components
