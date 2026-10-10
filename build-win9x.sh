@@ -64,11 +64,16 @@ make -j"$JOBS"
 make install
 echo "binutils done"
 
-# ===== Step 2: w32api (headers + import libs) =====
+# ===== Step 2: w32api headers =====
 # Extract mingwrt as a sibling FIRST: w32api's Makefile generates
 # _mingw.h from ../mingwrt*/include/_mingw.h.in (mingwrt_srcdir); the
 # later mingwrt build needs ../w32api*/include/w32api.h.in in turn.
-echo "=== [2/7] Building w32api-$W32API_VER ==="
+# Headers alone here: the import libraries need C stubs (ws2_32.c,
+# shell32.c, *-uuid.c) that pull in winnt.h, whose CONTEXT definitions
+# are gated on _X86_, and no cross-GCC exists yet (CC would fall back to
+# host gcc, which neither defines _X86_ nor produces i386 COFF objects).
+# The libraries are built in step 4 with the cross-GCC.
+echo "=== [2/8] Installing w32api-$W32API_VER headers ==="
 cd "$BUILD_DIR"
 rm -rf "mingwrt-${MINGWRT_VER}" "w32api-${W32API_VER}"
 tar -xf "$SOURCES_DIR/mingwrt-${MINGWRT_VER}.tar.xz"
@@ -76,11 +81,11 @@ tar -xf "$SOURCES_DIR/w32api-${W32API_VER}.tar.xz"
 cd "w32api-${W32API_VER}"
 
 ./configure --host="$TARGET" --prefix="$SYSROOT"
-make -j"$JOBS" install
-echo "w32api done"
+make -j"$JOBS" install-headers
+echo "w32api headers done"
 
 # ===== Step 3: GCC Stage 1 (C and C++) =====
-echo "=== [3/7] Building GCC $GCC_VER stage1 ==="
+echo "=== [3/8] Building GCC $GCC_VER stage1 ==="
 cd "$BUILD_DIR"
 mkdir -p "build-gcc-stage1"
 cd "build-gcc-stage1"
@@ -112,12 +117,26 @@ make -j"$JOBS" all-gcc
 make install-gcc
 echo "GCC stage1 done"
 
-# ===== Step 4: mingwrt (MinGW runtime) =====
+# ===== Step 4: w32api import libraries (cross-GCC) =====
+# Build the import libs with the cross-GCC from step 3 instead of host
+# gcc: the C-stub members (ws2_32.c, shell32.c, *-uuid.c) must be i386
+# COFF and need _X86_ defined so winnt.h (CONTEXT) compiles. CPPFLAGS
+# adds the cross-compiler's private include dir for stdarg.h because the
+# w32api Makefile compiles the stubs with -nostdinc.
+echo "=== [4/8] Building w32api-$W32API_VER import libraries (cross GCC) ==="
+cd "$BUILD_DIR/w32api-${W32API_VER}"
+make -j"$JOBS" \
+    CC="$TARGET-gcc" \
+    CPPFLAGS="-D_X86_ -I$($TARGET-gcc -print-file-name=include)" \
+    install-w32api-libs
+echo "w32api libs done"
+
+# ===== Step 5: mingwrt (MinGW runtime) =====
 # Tree was already extracted as a sibling in step 2 (w32api needs it).
 # Needs the cross-GCC from step 3; the sibling w32api tree supplies
 # w32api.h.in. The stage-2 DLL build auto-disables while the CRT itself
 # is still missing from the sysroot.
-echo "=== [4/7] Building mingwrt-$MINGWRT_VER ==="
+echo "=== [5/8] Building mingwrt-$MINGWRT_VER ==="
 cd "$BUILD_DIR/mingwrt-${MINGWRT_VER}"
 
 ./configure \
@@ -130,17 +149,17 @@ make -j"$JOBS"
 make install
 echo "mingwrt done"
 
-# ===== Step 5: GCC Stage 2 (full compiler) =====
-echo "=== [5/7] Building GCC $GCC_VER stage2 (full) ==="
+# ===== Step 6: GCC Stage 2 (full compiler) =====
+echo "=== [6/8] Building GCC $GCC_VER stage2 (full) ==="
 cd "$BUILD_DIR/build-gcc-stage1"
 make -j"$JOBS" all
 make install
 echo "GCC stage2 done"
 
-# ===== Step 6: mingwrt (final, full build with DLLs) =====
+# ===== Step 7: mingwrt (final, full build with DLLs) =====
 # Now that the full compiler and CRT are present, re-run configure so
 # the stage-2 DLL build (mingwm10.dll etc.) is no longer disabled.
-echo "=== [6/7] Rebuilding mingwrt (stage-1+2) ==="
+echo "=== [7/8] Rebuilding mingwrt (stage-1+2) ==="
 cd "$BUILD_DIR/mingwrt-${MINGWRT_VER}"
 make clean || true
 ./configure \
@@ -152,8 +171,8 @@ make -j"$JOBS"
 make install
 echo "mingwrt final done"
 
-# ===== Step 7: pthreads-w32 =====
-echo "=== [7/7] Building pthreads-w32-$PTHREADS_VER ==="
+# ===== Step 8: pthreads-w32 =====
+echo "=== [8/8] Building pthreads-w32-$PTHREADS_VER ==="
 cd "$BUILD_DIR"
 rm -rf "pthreads-w32-${PTHREADS_VER//./-}-release"
 tar -xf "$SOURCES_DIR/pthreads-w32-${PTHREADS_VER}.tar.gz"

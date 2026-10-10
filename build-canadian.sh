@@ -71,11 +71,14 @@ build_stage1() {
     make -j"$JOBS"
     make install
 
-    # ---- 0b: w32api (headers + import libs) ----
+    # ---- 0b: w32api headers ----
     # Extract mingwrt as a sibling FIRST: w32api generates _mingw.h from
     # ../*mingwrt*/include/_mingw.h.in (mingwrt_srcdir); the later
     # mingwrt build needs ../*w32api*/include/w32api.h.in in turn.
-    echo "[2/10] w32api (Stage 1)"
+    # Headers only here; the import libs need C stubs (ws2_32.c,
+    # shell32.c, *-uuid.c) that hit winnt.h's _X86_-gated CONTEXT and
+    # must be i386 COFF, so they're built after GCC stage1 (step 3b).
+    echo "[2/10] w32api headers (Stage 1)"
     cd "$BUILD_DIR"
     rm -rf "mingw-w32api-stage1" "mingw-mingwrt-stage1"
     tar -xf "$SOURCES_DIR/mingwrt-${MINGWRT_VER}.tar.xz"
@@ -84,7 +87,7 @@ build_stage1() {
     mv "w32api-${W32API_VER}" "mingw-w32api-stage1"
     cd "mingw-w32api-stage1"
     ./configure --host="$TARGET" --prefix="$SYSROOT1"
-    make -j"$JOBS" install
+    make -j"$JOBS" install-headers
 
     # ---- 0c: GCC Stage 1 (C and C++) - IN-TREE DEPENDENCIES ----
     echo "[3/10] GCC Stage 1 (C and C++) - in-tree deps"
@@ -111,6 +114,18 @@ build_stage1() {
         LDFLAGS_FOR_TARGET="$HOST_LDFLAGS"
     make -j"$JOBS" all-gcc
     make install-gcc
+
+    # ---- 0c2: w32api import libraries (cross GCC) ----
+    # Headers were installed in step 2; the import libs' C-stub members
+    # (ws2_32.c, shell32.c, *-uuid.c) must be i386 COFF and need _X86_
+    # so winnt.h (CONTEXT) compiles. CPPFLAGS adds the cross-compiler's
+    # private include dir for stdarg.h (stubs compile with -nostdinc).
+    echo "[3b] w32api import libs (cross GCC)"
+    cd "$BUILD_DIR/mingw-w32api-stage1"
+    make -j"$JOBS" \
+        CC="$TARGET-gcc" \
+        CPPFLAGS="-D_X86_ -I$($TARGET-gcc -print-file-name=include)" \
+        install-w32api-libs
 
     # ---- 0d: mingwrt ----
     # Tree was already extracted as a sibling in step 2 (w32api needs it).
@@ -269,7 +284,12 @@ build_stage2() {
         --build="$BUILD" --host="$HOST" \
         --prefix="$SYSROOT2" \
         CC="$HOST-gcc" CFLAGS="$HOST_CFLAGS"
-    make -j"$JOBS" install
+    # -D_X86_ resolves winnt.h's CONTEXT gate for the C-stub import libs
+    # (ws2_32.c etc.), which compile with -nostdinc; add the compiler's
+    # private include dir so stdarg.h is found.
+    make -j"$JOBS" \
+        CPPFLAGS="-D_X86_ -I$($HOST-gcc -print-file-name=include)" \
+        install
 
     # ---- 2c: mingwrt (host) ----
     # Tree was already extracted as a sibling in step 2 (w32api needs it).
