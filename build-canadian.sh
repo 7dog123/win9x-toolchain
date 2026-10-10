@@ -76,7 +76,7 @@ build_stage1() {
     cd "$BUILD_DIR"
     rm -rf "mingw-w32api-stage1"
     tar -xf "$SOURCES_DIR/w32api-${W32API_VER}.tar.xz"
-    mv "w32api-${W32API_VER}-mingw32-src" "mingw-w32api-stage1"
+    mv "w32api-${W32API_VER}" "mingw-w32api-stage1"
     cd "mingw-w32api-stage1"
     ./configure \
         --host="$TARGET" \
@@ -91,7 +91,7 @@ build_stage1() {
     cd "$BUILD_DIR"
     rm -rf "mingw-mingwrt-stage1"
     tar -xf "$SOURCES_DIR/mingwrt-${MINGWRT_VER}.tar.xz"
-    mv "mingwrt-${MINGWRT_VER}-mingw32-src" "mingw-mingwrt-stage1"
+    mv "mingwrt-${MINGWRT_VER}" "mingw-mingwrt-stage1"
     cd "mingw-mingwrt-stage1/mingwrt"
     ./configure \
         --host="$TARGET" \
@@ -264,7 +264,7 @@ build_stage2() {
     cd "$BUILD_DIR"
     rm -rf "mingw-w32api-host"
     tar -xf "$SOURCES_DIR/w32api-${W32API_VER}.tar.xz"
-    mv "w32api-${W32API_VER}-mingw32-src" "mingw-w32api-host"
+    mv "w32api-${W32API_VER}" "mingw-w32api-host"
     cd "mingw-w32api-host"
     ./configure \
         --build="$BUILD" --host="$HOST" \
@@ -280,7 +280,7 @@ build_stage2() {
     cd "$BUILD_DIR"
     rm -rf "mingw-mingwrt-host"
     tar -xf "$SOURCES_DIR/mingwrt-${MINGWRT_VER}.tar.xz"
-    mv "mingwrt-${MINGWRT_VER}-mingw32-src" "mingw-mingwrt-host"
+    mv "mingwrt-${MINGWRT_VER}" "mingw-mingwrt-host"
     cd "mingw-mingwrt-host/mingwrt"
     ./configure \
         --build="$BUILD" --host="$HOST" \
