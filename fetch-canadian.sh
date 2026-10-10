@@ -22,7 +22,7 @@ download() {
         return 0
     fi
     echo "  [GET] $url"
-    wget -q --show-progress -O "$output" "$url"
+    wget -q --show-progress --tries=3 --timeout=30 -O "$output" "$url"
 }
 
 # Main components
