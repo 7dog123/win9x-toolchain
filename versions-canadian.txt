@@ -1,0 +1,33 @@
+# Canadian Cross Build Dependencies
+# Stage 1 (Linux → Win9x): Uses GCC's ./contrib/download_prerequisites for gmp/mpfr/mpc/isl
+# Stage 2 (Win9x → Win9x): Needs libiconv, gettext, zlib built for host
+
+# Make
+MAKE_VER=4.3
+MAKE_URL=https://ftp.gnu.org/gnu/make/make-${MAKE_VER}.tar.gz
+
+# Stage 2 host dependencies (not covered by GCC's download_prerequisites)
+LIBICONV_VER=1.16
+GETTEXT_VER=0.21
+ZLIB_VER=1.2.13
+
+LIBICONV_URL=https://ftp.gnu.org/gnu/libiconv/libiconv-${LIBICONV_VER}.tar.gz
+GETTEXT_URL=https://ftp.gnu.org/gnu/gettext/gettext-${GETTEXT_VER}.tar.xz
+ZLIB_URL=https://zlib.net/zlib-${ZLIB_VER}.tar.gz
+
+# Toolchain versions
+BINUTILS_VER=2.28
+GCC_VER=6.3.0
+MINGWRT_VER=5.0.2
+W32API_VER=5.0.2
+PTHREADS_VER=2.9.1
+
+# Build settings
+BUILD=x86_64-linux-gnu
+HOST=i586-w64-mingw32
+TARGET=i586-w64-mingw32
+
+# Host compilation flags (for Win9x compatibility)
+HOST_CFLAGS="-march=i586 -mtune=pentium -O2 -pipe -DWINVER=0x0400 -D_WIN32_WINNT=0x0400 -D_WIN32_WINDOWS=0x0410"
+HOST_CXXFLAGS="$HOST_CFLAGS"
+HOST_LDFLAGS="-static"

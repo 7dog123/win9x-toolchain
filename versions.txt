@@ -1,0 +1,47 @@
+# Win9x Cross-Compiler Toolchain Versions
+# Target: Windows 95/98/ME (i586 / Pentium class)
+# Host: Linux (Debian 9 Stretch)
+# Built: 2026-10-09
+
+# Official MinGW.org releases (last to support Win95 natively)
+BINUTILS_VER=2.28
+GCC_VER=6.3.0
+MINGWRT_VER=5.0.2
+W32API_VER=5.0.2
+
+# pthreads-w32 (last with Win95-compatible MinGW build)
+PTHREADS_VER=2.9.1
+
+# Target triplet (i586 = Pentium, compatible with Win95)
+TARGET=i586-w64-mingw32
+
+# Build settings
+# -march=i586 -mtune=pentium for Pentium compatibility
+# -DWINVER=0x0400 -D_WIN32_WINNT=0x0400 for Win95 API level
+# --disable-libstdcxx-threads (no winpthreads on Win95)
+# --enable-threads=win32 (use native Win32 threads)
+# --disable-sjlj-exceptions --with-dwarf2 (or --enable-sjlj-exceptions for compatibility)
+
+# Source URLs
+BINUTILS_URL=https://ftp.gnu.org/gnu/binutils/binutils-${BINUTILS_VER}.tar.xz
+GCC_URL=https://ftp.gnu.org/gnu/gcc/gcc-${GCC_VER}/gcc-${GCC_VER}.tar.xz
+MINGWRT_URL=https://github.com/mingw-w32/mingw-org-wsl/archive/refs/tags/mingwrt-${MINGWRT_VER}-release.tar.gz
+W32API_URL=https://github.com/mingw-w32/mingw-org-wsl/archive/refs/tags/w32api-${W32API_VER}-release.tar.gz
+PTHREADS_URL=https://sourceware.org/pub/pthreads-win32/pthreads-w32-${PTHREADS_VER//./-}-release.tar.gz
+
+# Alternative: MinGW SourceForge (may be slower)
+# MINGWRT_URL=https://sourceforge.net/projects/mingw/files/MinGW/Base/mingwrt/mingwrt-${MINGWRT_VER}/mingwrt-${MINGWRT_VER}-mingw32-src.tar.xz
+# W32API_URL=https://sourceforge.net/projects/mingw/files/MinGW/Base/w32api/w32api-${W32API_VER}/w32api-${W32API_VER}-mingw32-src.tar.xz
+
+# Dependencies (built statically into toolchain)
+GMP_VER=6.1.2
+MPFR_VER=3.1.5
+MPC_VER=1.0.3
+ISL_VER=0.18
+ZLIB_VER=1.2.11
+
+GMP_URL=https://ftp.gnu.org/gnu/gmp/gmp-${GMP_VER}.tar.xz
+MPFR_URL=https://ftp.gnu.org/gnu/mpfr/mpfr-${MPFR_VER}.tar.xz
+MPC_URL=https://ftp.gnu.org/gnu/mpc/mpc-${MPC_VER}.tar.gz
+ISL_URL=https://ftp.gnu.org/gnu/isl/isl-${ISL_VER}.tar.xz
+ZLIB_URL=https://zlib.net/zlib-${ZLIB_VER}.tar.gz
