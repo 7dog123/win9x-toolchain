@@ -46,17 +46,19 @@ download() {
 }
 
 # Mirror arrays for each package - extensive fallback chain
+# binutils 2.28 only has .tar.gz/.tar.bz2 (not .tar.xz)
 BINUTILS_URLS=(
-    "https://ftp.gnu.org/gnu/binutils/binutils-${BINUTILS_VER}.tar.xz"
-    "https://ftpmirror.gnu.org/binutils/binutils-${BINUTILS_VER}.tar.xz"
-    "https://mirror.kernel.org/gnu/binutils/binutils-${BINUTILS_VER}.tar.xz"
-    "https://ftp.gnu.org/pub/gnu/binutils/binutils-${BINUTILS_VER}.tar.xz"
-    "https://mirrors.edge.kernel.org/gnu/binutils/binutils-${BINUTILS_VER}.tar.xz"
-    "https://gnu.mirror.constant.com/binutils/binutils-${BINUTILS_VER}.tar.xz"
-    "https://ftp.jaist.ac.jp/pub/GNU/binutils/binutils-${BINUTILS_VER}.tar.xz"
-    "https://ftp.tsukuba.wide.ad.jp/software/gnu/binutils/binutils-${BINUTILS_VER}.tar.xz"
+    "https://ftp.gnu.org/gnu/binutils/binutils-${BINUTILS_VER}.tar.gz"
+    "https://ftpmirror.gnu.org/binutils/binutils-${BINUTILS_VER}.tar.gz"
+    "https://mirror.kernel.org/gnu/binutils/binutils-${BINUTILS_VER}.tar.gz"
+    "https://ftp.gnu.org/pub/gnu/binutils/binutils-${BINUTILS_VER}.tar.gz"
+    "https://mirrors.edge.kernel.org/gnu/binutils/binutils-${BINUTILS_VER}.tar.gz"
+    "https://gnu.mirror.constant.com/binutils/binutils-${BINUTILS_VER}.tar.gz"
+    "https://ftp.jaist.ac.jp/pub/GNU/binutils/binutils-${BINUTILS_VER}.tar.gz"
+    "https://ftp.tsukuba.wide.ad.jp/software/gnu/binutils/binutils-${BINUTILS_VER}.tar.gz"
 )
 
+# GCC 6.3.0 has .tar.xz (since GCC 4.7.0)
 GCC_URLS=(
     "https://ftp.gnu.org/gnu/gcc/gcc-${GCC_VER}/gcc-${GCC_VER}.tar.xz"
     "https://ftpmirror.gnu.org/gcc/gcc-${GCC_VER}/gcc-${GCC_VER}.tar.xz"
