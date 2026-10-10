@@ -67,9 +67,9 @@ echo "binutils done"
 # ===== Step 2: mingw-w64 headers (w32api) =====
 echo "=== [2/7] Installing w32api-$W32API_VER headers ==="
 cd "$BUILD_DIR"
-rm -rf "mingw-org-wsl-w32api-${W32API_VER}-release"
+rm -rf "w32api-${W32API_VER}-mingw32-src"
 tar -xf "$SOURCES_DIR/w32api-${W32API_VER}.tar.xz"
-cd "mingw-org-wsl-w32api-${W32API_VER}-release"
+cd "w32api-${W32API_VER}-mingw32-src"
 
 # Configure and install headers only
 ./configure \
@@ -86,9 +86,9 @@ echo "w32api headers done"
 # ===== Step 3: mingwrt (MinGW runtime) =====
 echo "=== [3/7] Building mingwrt-$MINGWRT_VER ==="
 cd "$BUILD_DIR"
-rm -rf "mingw-org-wsl-mingwrt-${MINGWRT_VER}-release"
+rm -rf "mingwrt-${MINGWRT_VER}-mingw32-src"
 tar -xf "$SOURCES_DIR/mingwrt-${MINGWRT_VER}.tar.xz"
-cd "mingw-org-wsl-mingwrt-${MINGWRT_VER}-release/mingwrt"
+cd "mingwrt-${MINGWRT_VER}-mingw32-src/mingwrt"
 
 # Build mingwrt with Win95-compatible settings
 ./configure \
