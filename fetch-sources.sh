@@ -20,6 +20,14 @@ download() {
     shift
     local urls=("$@")
 
+    # Handle case where single URL string is passed instead of array
+    if [[ ${#urls[@]} -eq 1 && ! "${urls[0]}" =~ ^https?:// ]]; then
+        urls=("${urls[0]}")
+    elif [[ ${#urls[@]} -eq 0 ]]; then
+        echo "  [ERROR] No URLs provided for $output"
+        return 1
+    fi
+
     if [[ -f "$output" ]]; then
         echo "  [SKIP] $output exists"
         return 0
@@ -45,34 +53,17 @@ download() {
     return 1
 }
 
-# Mirror arrays for each package - extensive fallback chain
-# binutils 2.28 only has .tar.gz/.tar.bz2 (not .tar.xz)
-BINUTILS_URLS=(
-    "https://ftp.gnu.org/gnu/binutils/binutils-${BINUTILS_VER}.tar.gz"
-    "https://ftpmirror.gnu.org/binutils/binutils-${BINUTILS_VER}.tar.gz"
-    "https://mirror.kernel.org/gnu/binutils/binutils-${BINUTILS_VER}.tar.gz"
-    "https://ftp.gnu.org/pub/gnu/binutils/binutils-${BINUTILS_VER}.tar.gz"
-    "https://mirrors.edge.kernel.org/gnu/binutils/binutils-${BINUTILS_VER}.tar.gz"
-    "https://gnu.mirror.constant.com/binutils/binutils-${BINUTILS_VER}.tar.gz"
-    "https://ftp.jaist.ac.jp/pub/GNU/binutils/binutils-${BINUTILS_VER}.tar.gz"
-    "https://ftp.tsukuba.wide.ad.jp/software/gnu/binutils/binutils-${BINUTILS_VER}.tar.gz"
-)
+# Primary mirror
+BINUTILS_URL="https://ftp.gnu.org/gnu/binutils/binutils-${BINUTILS_VER}.tar.gz"
 
-# GCC 6.3.0 has .tar.xz (since GCC 4.7.0)
+# GCC 6.3.0 - use .tar.gz (more widely available)
 GCC_URLS=(
-    "https://ftp.gnu.org/gnu/gcc/gcc-${GCC_VER}/gcc-${GCC_VER}.tar.xz"
-    "https://ftpmirror.gnu.org/gcc/gcc-${GCC_VER}/gcc-${GCC_VER}.tar.xz"
-    "https://mirror.kernel.org/gnu/gcc/gcc-${GCC_VER}/gcc-${GCC_VER}.tar.xz"
-    "https://ftp.gnu.org/pub/gnu/gcc/gcc-${GCC_VER}/gcc-${GCC_VER}.tar.xz"
-    "https://mirrors.edge.kernel.org/gnu/gcc/gcc-${GCC_VER}/gcc-${GCC_VER}.tar.xz"
-    "https://gnu.mirror.constant.com/gcc/gcc-${GCC_VER}/gcc-${GCC_VER}.tar.xz"
-    "https://ftp.jaist.ac.jp/pub/GNU/gcc/gcc-${GCC_VER}/gcc-${GCC_VER}.tar.xz"
-    "https://ftp.tsukuba.wide.ad.jp/software/gnu/gcc/gcc-${GCC_VER}/gcc-${GCC_VER}.tar.xz"
+    "https://ftp.gnu.org/gnu/gcc/gcc-${GCC_VER}/gcc-${GCC_VER}.tar.gz"
 )
 
 # Main components with multiple mirrors
 echo "=== Downloading main components ==="
-download "$SOURCES_DIR/binutils-${BINUTILS_VER}.tar.xz" "${BINUTILS_URLS[@]}"
+download "$SOURCES_DIR/binutils-${BINUTILS_VER}.tar.gz" "${BINUTILS_URL}"
 download "$SOURCES_DIR/gcc-${GCC_VER}.tar.xz" "${GCC_URLS[@]}"
 
 MINGWRT_URLS=(
