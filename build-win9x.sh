@@ -46,7 +46,7 @@ mkdir -p "$PREFIX" "$SYSROOT" "$BUILD_DIR"
 echo "=== [1/7] Building binutils-$BINUTILS_VER ==="
 cd "$BUILD_DIR"
 rm -rf "binutils-${BINUTILS_VER}"
-tar -xf "$SOURCES_DIR/binutils-${BINUTILS_VER}.tar.xz"
+tar -xf "$SOURCES_DIR/binutils-${BINUTILS_VER}.tar.gz"
 mkdir -p "build-binutils"
 cd "build-binutils"
 "../binutils-${BINUTILS_VER}/configure" \
@@ -68,7 +68,7 @@ echo "binutils done"
 echo "=== [2/7] Installing w32api-$W32API_VER headers ==="
 cd "$BUILD_DIR"
 rm -rf "mingw-org-wsl-w32api-${W32API_VER}-release"
-tar -xf "$SOURCES_DIR/w32api-${W32API_VER}.tar.gz"
+tar -xf "$SOURCES_DIR/w32api-${W32API_VER}.tar.xz"
 cd "mingw-org-wsl-w32api-${W32API_VER}-release"
 
 # Configure and install headers only
@@ -87,7 +87,7 @@ echo "w32api headers done"
 echo "=== [3/7] Building mingwrt-$MINGWRT_VER ==="
 cd "$BUILD_DIR"
 rm -rf "mingw-org-wsl-mingwrt-${MINGWRT_VER}-release"
-tar -xf "$SOURCES_DIR/mingwrt-${MINGWRT_VER}.tar.gz"
+tar -xf "$SOURCES_DIR/mingwrt-${MINGWRT_VER}.tar.xz"
 cd "mingw-org-wsl-mingwrt-${MINGWRT_VER}-release/mingwrt"
 
 # Build mingwrt with Win95-compatible settings

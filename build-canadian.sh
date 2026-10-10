@@ -58,7 +58,8 @@ build_stage1() {
     echo "[1/10] binutils (Stage 1)"
     cd "$BUILD_DIR"
     rm -rf "binutils-${BINUTILS_VER}-stage1"
-    cp -r "$SOURCES_DIR/binutils-${BINUTILS_VER}" "binutils-${BINUTILS_VER}-stage1"
+    tar -xf "$SOURCES_DIR/binutils-${BINUTILS_VER}.tar.gz" -C "$BUILD_DIR"
+    mv "binutils-${BINUTILS_VER}" "binutils-${BINUTILS_VER}-stage1"
     mkdir -p "build-binutils-stage1"
     cd "build-binutils-stage1"
     "../binutils-${BINUTILS_VER}-stage1/configure" \
@@ -74,7 +75,7 @@ build_stage1() {
     echo "[2/10] w32api headers (Stage 1)"
     cd "$BUILD_DIR"
     rm -rf "mingw-w32api-stage1"
-    tar -xf "$SOURCES_DIR/w32api-${W32API_VER}.tar.gz"
+    tar -xf "$SOURCES_DIR/w32api-${W32API_VER}.tar.xz"
     mv "mingw-org-wsl-w32api-${W32API_VER}-release" "mingw-w32api-stage1"
     cd "mingw-w32api-stage1"
     ./configure \
@@ -89,7 +90,7 @@ build_stage1() {
     echo "[3/10] mingwrt (Stage 1)"
     cd "$BUILD_DIR"
     rm -rf "mingw-mingwrt-stage1"
-    tar -xf "$SOURCES_DIR/mingwrt-${MINGWRT_VER}.tar.gz"
+    tar -xf "$SOURCES_DIR/mingwrt-${MINGWRT_VER}.tar.xz"
     mv "mingw-org-wsl-mingwrt-${MINGWRT_VER}-release" "mingw-mingwrt-stage1"
     cd "mingw-mingwrt-stage1/mingwrt"
     ./configure \
@@ -244,7 +245,8 @@ build_stage2() {
     echo "[1/7] binutils (host=$HOST)"
     cd "$BUILD_DIR"
     rm -rf "binutils-${BINUTILS_VER}-host"
-    cp -r "$SOURCES_DIR/binutils-${BINUTILS_VER}" "binutils-${BINUTILS_VER}-host"
+    tar -xf "$SOURCES_DIR/binutils-${BINUTILS_VER}.tar.gz" -C "$BUILD_DIR"
+    mv "binutils-${BINUTILS_VER}" "binutils-${BINUTILS_VER}-host"
     mkdir -p "build-binutils-host"
     cd "build-binutils-host"
     "../binutils-${BINUTILS_VER}-host/configure" \
@@ -261,7 +263,7 @@ build_stage2() {
     echo "[2/7] w32api headers (host=$HOST)"
     cd "$BUILD_DIR"
     rm -rf "mingw-w32api-host"
-    tar -xf "$SOURCES_DIR/w32api-${W32API_VER}.tar.gz"
+    tar -xf "$SOURCES_DIR/w32api-${W32API_VER}.tar.xz"
     mv "mingw-org-wsl-w32api-${W32API_VER}-release" "mingw-w32api-host"
     cd "mingw-w32api-host"
     ./configure \
@@ -277,7 +279,7 @@ build_stage2() {
     echo "[3/7] mingwrt (host=$HOST)"
     cd "$BUILD_DIR"
     rm -rf "mingw-mingwrt-host"
-    tar -xf "$SOURCES_DIR/mingwrt-${MINGWRT_VER}.tar.gz"
+    tar -xf "$SOURCES_DIR/mingwrt-${MINGWRT_VER}.tar.xz"
     mv "mingw-org-wsl-mingwrt-${MINGWRT_VER}-release" "mingw-mingwrt-host"
     cd "mingw-mingwrt-host/mingwrt"
     ./configure \
