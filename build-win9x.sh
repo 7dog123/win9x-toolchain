@@ -64,47 +64,21 @@ make -j"$JOBS"
 make install
 echo "binutils done"
 
-# ===== Step 2: mingw-w64 headers (w32api) =====
-echo "=== [2/7] Installing w32api-$W32API_VER headers ==="
+# ===== Step 2: w32api (headers + import libs) =====
+# Build as a sibling of mingwrt below, so each can find the other's
+# .h.in templates (w32api needs ../mingwrt*, mingwrt needs ../w32api*).
+echo "=== [2/7] Building w32api-$W32API_VER ==="
 cd "$BUILD_DIR"
 rm -rf "w32api-${W32API_VER}"
 tar -xf "$SOURCES_DIR/w32api-${W32API_VER}.tar.xz"
 cd "w32api-${W32API_VER}"
 
-# Configure and install headers only
-./configure \
-    --host="$TARGET" \
-    --prefix="$SYSROOT" \
-    --enable-sdk=all \
-    --enable-secure-api \
-    --with-default-win32-winnt=0x0400 \
-    --with-default-msvcrt=msvcrt
-make -j"$JOBS" install-headers
-make -j"$JOBS" install-libs
-echo "w32api headers done"
+./configure --host="$TARGET" --prefix="$SYSROOT"
+make -j"$JOBS" install
+echo "w32api done"
 
-# ===== Step 3: mingwrt (MinGW runtime) =====
-echo "=== [3/7] Building mingwrt-$MINGWRT_VER ==="
-cd "$BUILD_DIR"
-rm -rf "mingwrt-${MINGWRT_VER}"
-tar -xf "$SOURCES_DIR/mingwrt-${MINGWRT_VER}.tar.xz"
-cd "mingwrt-${MINGWRT_VER}/mingwrt"
-
-# Build mingwrt with Win95-compatible settings
-./configure \
-    --host="$TARGET" \
-    --prefix="$SYSROOT" \
-    --enable-msvcrt=msvcrt \
-    --disable-unicode \
-    --disable-dependency-tracking \
-    CFLAGS="$TARGET_CFLAGS" \
-    LDFLAGS="$TARGET_LDFLAGS"
-make -j"$JOBS"
-make install
-echo "mingwrt done"
-
-# ===== Step 4: GCC Stage 1 (C and C++) =====
-echo "=== [4/7] Building GCC $GCC_VER stage1 ==="
+# ===== Step 3: GCC Stage 1 (C and C++) =====
+echo "=== [3/7] Building GCC $GCC_VER stage1 ==="
 cd "$BUILD_DIR"
 mkdir -p "build-gcc-stage1"
 cd "build-gcc-stage1"
@@ -136,27 +110,47 @@ make -j"$JOBS" all-gcc
 make install-gcc
 echo "GCC stage1 done"
 
-# ===== Step 5: mingwrt (final, with GCC available) =====
-echo "=== [5/7] Rebuilding mingwrt with GCC ==="
-cd "$BUILD_DIR/mingw-org-wsl-mingwrt-${MINGWRT_VER}-release/mingwrt"
+# ===== Step 4: mingwrt (MinGW runtime) =====
+# Needs the cross-GCC from step 3; along with the sibling w32api tree
+# extracted in step 2, configure also auto-disables the stage-2 DLL
+# build while the CRT itself is missing from the sysroot.
+echo "=== [4/7] Building mingwrt-$MINGWRT_VER ==="
+cd "$BUILD_DIR"
+rm -rf "mingwrt-${MINGWRT_VER}"
+tar -xf "$SOURCES_DIR/mingwrt-${MINGWRT_VER}.tar.xz"
+cd "mingwrt-${MINGWRT_VER}"
+
+./configure \
+    --host="$TARGET" \
+    --prefix="$SYSROOT" \
+    --disable-dependency-tracking \
+    CFLAGS="$TARGET_CFLAGS" \
+    LDFLAGS="$TARGET_LDFLAGS"
+make -j"$JOBS"
+make install
+echo "mingwrt done"
+
+# ===== Step 5: GCC Stage 2 (full compiler) =====
+echo "=== [5/7] Building GCC $GCC_VER stage2 (full) ==="
+cd "$BUILD_DIR/build-gcc-stage1"
+make -j"$JOBS" all
+make install
+echo "GCC stage2 done"
+
+# ===== Step 6: mingwrt (final, full build with DLLs) =====
+# Now that the full compiler and CRT are present, re-run configure so
+# the stage-2 DLL build (mingwm10.dll etc.) is no longer disabled.
+echo "=== [6/7] Rebuilding mingwrt (stage-1+2) ==="
+cd "$BUILD_DIR/mingwrt-${MINGWRT_VER}"
 make clean || true
 ./configure \
     --host="$TARGET" \
     --prefix="$SYSROOT" \
-    --enable-msvcrt=msvcrt \
-    --disable-unicode \
     CFLAGS="$TARGET_CFLAGS" \
     LDFLAGS="$TARGET_LDFLAGS"
 make -j"$JOBS"
 make install
 echo "mingwrt final done"
-
-# ===== Step 6: GCC Stage 2 (full compiler) =====
-echo "=== [6/7] Building GCC $GCC_VER stage2 (full) ==="
-cd "$BUILD_DIR/build-gcc-stage1"
-make -j"$JOBS" all
-make install
-echo "GCC stage2 done"
 
 # ===== Step 7: pthreads-w32 =====
 echo "=== [7/7] Building pthreads-w32-$PTHREADS_VER ==="

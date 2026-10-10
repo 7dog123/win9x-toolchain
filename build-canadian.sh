@@ -71,39 +71,18 @@ build_stage1() {
     make -j"$JOBS"
     make install
 
-    # ---- 0b: w32api headers ----
-    echo "[2/10] w32api headers (Stage 1)"
+    # ---- 0b: w32api (headers + import libs) ----
+    echo "[2/10] w32api (Stage 1)"
     cd "$BUILD_DIR"
     rm -rf "mingw-w32api-stage1"
     tar -xf "$SOURCES_DIR/w32api-${W32API_VER}.tar.xz"
     mv "w32api-${W32API_VER}" "mingw-w32api-stage1"
     cd "mingw-w32api-stage1"
-    ./configure \
-        --host="$TARGET" \
-        --prefix="$SYSROOT1" \
-        --enable-sdk=all \
-        --with-default-win32-winnt=0x0400 \
-        --with-default-msvcrt=msvcrt
-    make -j"$JOBS" install-headers install-libs
+    ./configure --host="$TARGET" --prefix="$SYSROOT1"
+    make -j"$JOBS" install
 
-    # ---- 0c: mingwrt ----
-    echo "[3/10] mingwrt (Stage 1)"
-    cd "$BUILD_DIR"
-    rm -rf "mingw-mingwrt-stage1"
-    tar -xf "$SOURCES_DIR/mingwrt-${MINGWRT_VER}.tar.xz"
-    mv "mingwrt-${MINGWRT_VER}" "mingw-mingwrt-stage1"
-    cd "mingw-mingwrt-stage1/mingwrt"
-    ./configure \
-        --host="$TARGET" \
-        --prefix="$SYSROOT1" \
-        --enable-msvcrt=msvcrt \
-        --disable-unicode \
-        CFLAGS="$HOST_CFLAGS" LDFLAGS="$HOST_LDFLAGS"
-    make -j"$JOBS"
-    make install
-
-    # ---- 0d: GCC Stage 1 (C and C++) - IN-TREE DEPENDENCIES ----
-    echo "[4/10] GCC Stage 1 (C and C++) - in-tree deps"
+    # ---- 0c: GCC Stage 1 (C and C++) - IN-TREE DEPENDENCIES ----
+    echo "[3/10] GCC Stage 1 (C and C++) - in-tree deps"
     cd "$BUILD_DIR"
     rm -rf "gcc-${GCC_VER}-stage1"
     cp -r "$SOURCES_DIR/gcc-${GCC_VER}" "gcc-${GCC_VER}-stage1"
@@ -128,22 +107,36 @@ build_stage1() {
     make -j"$JOBS" all-gcc
     make install-gcc
 
-    # ---- 0e: Rebuild mingwrt with GCC ----
-    echo "[5/10] mingwrt rebuild with GCC"
-    cd "$BUILD_DIR/mingw-mingwrt-stage1/mingwrt"
-    make clean || true
+    # ---- 0d: mingwrt ----
+    echo "[4/10] mingwrt (Stage 1)"
+    cd "$BUILD_DIR"
+    rm -rf "mingw-mingwrt-stage1"
+    tar -xf "$SOURCES_DIR/mingwrt-${MINGWRT_VER}.tar.xz"
+    mv "mingwrt-${MINGWRT_VER}" "mingw-mingwrt-stage1"
+    cd "mingw-mingwrt-stage1"
     ./configure \
         --host="$TARGET" \
         --prefix="$SYSROOT1" \
-        --enable-msvcrt=msvcrt \
+        --disable-dependency-tracking \
         CFLAGS="$HOST_CFLAGS" LDFLAGS="$HOST_LDFLAGS"
     make -j"$JOBS"
     make install
 
-    # ---- 0f: GCC Stage 2 (Full) ----
-    echo "[6/10] GCC Stage 2 (Full)"
+    # ---- 0e: GCC Stage 2 (Full) ----
+    echo "[5/10] GCC Stage 2 (Full)"
     cd "$BUILD_DIR/build-gcc-stage1"
     make -j"$JOBS" all
+    make install
+
+    # ---- 0f: Rebuild mingwrt with GCC (stage-1+2) ----
+    echo "[6/10] mingwrt rebuild (stage-1+2)"
+    cd "$BUILD_DIR/mingw-mingwrt-stage1"
+    make clean || true
+    ./configure \
+        --host="$TARGET" \
+        --prefix="$SYSROOT1" \
+        CFLAGS="$HOST_CFLAGS" LDFLAGS="$HOST_LDFLAGS"
+    make -j"$JOBS"
     make install
 
     # ---- Remove in-tree gmp/mpfr/mpc/isl from Stage 1 GCC source tree ----
@@ -259,8 +252,8 @@ build_stage2() {
     make -j"$JOBS"
     make install
 
-    # ---- 2b: w32api headers (host) ----
-    echo "[2/7] w32api headers (host=$HOST)"
+    # ---- 2b: w32api (headers + import libs, host) ----
+    echo "[2/7] w32api (host=$HOST)"
     cd "$BUILD_DIR"
     rm -rf "mingw-w32api-host"
     tar -xf "$SOURCES_DIR/w32api-${W32API_VER}.tar.xz"
@@ -269,11 +262,8 @@ build_stage2() {
     ./configure \
         --build="$BUILD" --host="$HOST" \
         --prefix="$SYSROOT2" \
-        --enable-sdk=all \
-        --with-default-win32-winnt=0x0400 \
-        --with-default-msvcrt=msvcrt \
         CC="$HOST-gcc" CFLAGS="$HOST_CFLAGS"
-    make -j"$JOBS" install-headers install-libs
+    make -j"$JOBS" install
 
     # ---- 2c: mingwrt (host) ----
     echo "[3/7] mingwrt (host=$HOST)"
@@ -281,11 +271,10 @@ build_stage2() {
     rm -rf "mingw-mingwrt-host"
     tar -xf "$SOURCES_DIR/mingwrt-${MINGWRT_VER}.tar.xz"
     mv "mingwrt-${MINGWRT_VER}" "mingw-mingwrt-host"
-    cd "mingw-mingwrt-host/mingwrt"
+    cd "mingw-mingwrt-host"
     ./configure \
         --build="$BUILD" --host="$HOST" \
         --prefix="$SYSROOT2" \
-        --enable-msvcrt=msvcrt \
         CC="$HOST-gcc" CFLAGS="$HOST_CFLAGS" LDFLAGS="$HOST_LDFLAGS"
     make -j"$JOBS"
     make install
@@ -324,12 +313,11 @@ build_stage2() {
 
     # ---- 2e: Rebuild mingwrt with Stage 2 GCC ----
     echo "[5/7] mingwrt rebuild with Stage 2 GCC"
-    cd "$BUILD_DIR/mingw-mingwrt-host/mingwrt"
+    cd "$BUILD_DIR/mingw-mingwrt-host"
     make clean || true
     ./configure \
         --build="$BUILD" --host="$HOST" \
         --prefix="$SYSROOT2" \
-        --enable-msvcrt=msvcrt \
         CC="$HOST-gcc" CFLAGS="$HOST_CFLAGS" LDFLAGS="$HOST_LDFLAGS"
     make -j"$JOBS"
     make install
