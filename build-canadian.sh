@@ -72,9 +72,14 @@ build_stage1() {
     make install
 
     # ---- 0b: w32api (headers + import libs) ----
+    # Extract mingwrt as a sibling FIRST: w32api generates _mingw.h from
+    # ../*mingwrt*/include/_mingw.h.in (mingwrt_srcdir); the later
+    # mingwrt build needs ../*w32api*/include/w32api.h.in in turn.
     echo "[2/10] w32api (Stage 1)"
     cd "$BUILD_DIR"
-    rm -rf "mingw-w32api-stage1"
+    rm -rf "mingw-w32api-stage1" "mingw-mingwrt-stage1"
+    tar -xf "$SOURCES_DIR/mingwrt-${MINGWRT_VER}.tar.xz"
+    mv "mingwrt-${MINGWRT_VER}" "mingw-mingwrt-stage1"
     tar -xf "$SOURCES_DIR/w32api-${W32API_VER}.tar.xz"
     mv "w32api-${W32API_VER}" "mingw-w32api-stage1"
     cd "mingw-w32api-stage1"
@@ -108,12 +113,9 @@ build_stage1() {
     make install-gcc
 
     # ---- 0d: mingwrt ----
+    # Tree was already extracted as a sibling in step 2 (w32api needs it).
     echo "[4/10] mingwrt (Stage 1)"
-    cd "$BUILD_DIR"
-    rm -rf "mingw-mingwrt-stage1"
-    tar -xf "$SOURCES_DIR/mingwrt-${MINGWRT_VER}.tar.xz"
-    mv "mingwrt-${MINGWRT_VER}" "mingw-mingwrt-stage1"
-    cd "mingw-mingwrt-stage1"
+    cd "$BUILD_DIR/mingw-mingwrt-stage1"
     ./configure \
         --host="$TARGET" \
         --prefix="$SYSROOT1" \
@@ -253,9 +255,13 @@ build_stage2() {
     make install
 
     # ---- 2b: w32api (headers + import libs, host) ----
+    # Extract mingwrt as a sibling FIRST (w32api needs
+    # ../*mingwrt*/include/_mingw.h.in → mingwrt_srcdir).
     echo "[2/7] w32api (host=$HOST)"
     cd "$BUILD_DIR"
-    rm -rf "mingw-w32api-host"
+    rm -rf "mingw-w32api-host" "mingw-mingwrt-host"
+    tar -xf "$SOURCES_DIR/mingwrt-${MINGWRT_VER}.tar.xz"
+    mv "mingwrt-${MINGWRT_VER}" "mingw-mingwrt-host"
     tar -xf "$SOURCES_DIR/w32api-${W32API_VER}.tar.xz"
     mv "w32api-${W32API_VER}" "mingw-w32api-host"
     cd "mingw-w32api-host"
@@ -266,12 +272,9 @@ build_stage2() {
     make -j"$JOBS" install
 
     # ---- 2c: mingwrt (host) ----
+    # Tree was already extracted as a sibling in step 2 (w32api needs it).
     echo "[3/7] mingwrt (host=$HOST)"
-    cd "$BUILD_DIR"
-    rm -rf "mingw-mingwrt-host"
-    tar -xf "$SOURCES_DIR/mingwrt-${MINGWRT_VER}.tar.xz"
-    mv "mingwrt-${MINGWRT_VER}" "mingw-mingwrt-host"
-    cd "mingw-mingwrt-host"
+    cd "$BUILD_DIR/mingw-mingwrt-host"
     ./configure \
         --build="$BUILD" --host="$HOST" \
         --prefix="$SYSROOT2" \

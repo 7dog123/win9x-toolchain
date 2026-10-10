@@ -65,11 +65,13 @@ make install
 echo "binutils done"
 
 # ===== Step 2: w32api (headers + import libs) =====
-# Build as a sibling of mingwrt below, so each can find the other's
-# .h.in templates (w32api needs ../mingwrt*, mingwrt needs ../w32api*).
+# Extract mingwrt as a sibling FIRST: w32api's Makefile generates
+# _mingw.h from ../mingwrt*/include/_mingw.h.in (mingwrt_srcdir); the
+# later mingwrt build needs ../w32api*/include/w32api.h.in in turn.
 echo "=== [2/7] Building w32api-$W32API_VER ==="
 cd "$BUILD_DIR"
-rm -rf "w32api-${W32API_VER}"
+rm -rf "mingwrt-${MINGWRT_VER}" "w32api-${W32API_VER}"
+tar -xf "$SOURCES_DIR/mingwrt-${MINGWRT_VER}.tar.xz"
 tar -xf "$SOURCES_DIR/w32api-${W32API_VER}.tar.xz"
 cd "w32api-${W32API_VER}"
 
@@ -111,14 +113,12 @@ make install-gcc
 echo "GCC stage1 done"
 
 # ===== Step 4: mingwrt (MinGW runtime) =====
-# Needs the cross-GCC from step 3; along with the sibling w32api tree
-# extracted in step 2, configure also auto-disables the stage-2 DLL
-# build while the CRT itself is missing from the sysroot.
+# Tree was already extracted as a sibling in step 2 (w32api needs it).
+# Needs the cross-GCC from step 3; the sibling w32api tree supplies
+# w32api.h.in. The stage-2 DLL build auto-disables while the CRT itself
+# is still missing from the sysroot.
 echo "=== [4/7] Building mingwrt-$MINGWRT_VER ==="
-cd "$BUILD_DIR"
-rm -rf "mingwrt-${MINGWRT_VER}"
-tar -xf "$SOURCES_DIR/mingwrt-${MINGWRT_VER}.tar.xz"
-cd "mingwrt-${MINGWRT_VER}"
+cd "$BUILD_DIR/mingwrt-${MINGWRT_VER}"
 
 ./configure \
     --host="$TARGET" \
