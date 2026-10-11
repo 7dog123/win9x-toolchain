@@ -262,6 +262,34 @@ cp libpthreadGC2.a "$SYSROOT/lib/libpthread.dll.a"
 
 echo "pthreads-w32 done"
 
+# ===== Step 8b: target pkg-config wrapper =====
+# Libraries built for this target locate dependencies at configure time
+# via pkg-config. Provide a target-prefixed wrapper that always searches
+# the target sysroot and links statically, so automake/configure find the
+# right .pc files instead of the host's.
+cat > "$BUILD_DIR/$TARGET-pkg-config" <<EOF
+#!/usr/bin/env sh
+command -v pkg-config >/dev/null 2>&1 || {
+	echo "pkg-config not found" >&2
+	exit 1
+}
+
+export PKG_CONFIG_DIR=
+export PKG_CONFIG_PATH=
+export PKG_CONFIG_SYSROOT_DIR=
+export PKG_CONFIG_LIBDIR=$SYSROOT/lib/pkgconfig
+
+exec pkg-config --static "\$@"
+EOF
+install -m 755 "$BUILD_DIR/$TARGET-pkg-config" "$PREFIX/bin/$TARGET-pkg-config"
+echo "pkg-config wrapper installed: $PREFIX/bin/$TARGET-pkg-config"
+
+# The <sysroot>/mingw symlink farm only exists so GCC's build-time
+# fixincludes step (SYSTEM_HEADER_DIR=/mingw/include) can locate the
+# system headers; target compiles resolve them through <sysroot>/include.
+# Remove the aliases from the shipped sysroot.
+rm -rf "$SYSROOT/mingw"
+
 # ===== Final: Verify toolchain =====
 echo ""
 echo "=== Verifying toolchain ==="

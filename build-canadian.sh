@@ -242,6 +242,11 @@ build_stage1() {
     "$STAGE1_PREFIX/bin/$TARGET-gcc" --version
     "$STAGE1_PREFIX/bin/$TARGET-g++" --version
     
+    # The <sysroot>/mingw symlink farm is only needed while GCC is built
+    # (build-time fixincludes, SYSTEM_HEADER_DIR=/mingw/include); target
+    # compiles use <sysroot>/include. Drop it from the shipped sysroot.
+    rm -rf "$SYSROOT1/mingw"
+
     echo "=== STAGE 1 COMPLETE ==="
     echo "Cross-compiler at: $STAGE1_PREFIX"
     echo "Sysroot at: $SYSROOT1"
@@ -471,6 +476,10 @@ build_stage2() {
         CC="$HOST-gcc" CFLAGS="$HOST_CFLAGS" LDFLAGS="$HOST_LDFLAGS"
     make -j"$JOBS"
     make install
+
+    # Drop the build-time <sysroot>/mingw alias farm (see Stage 1); target
+    # compiles resolve headers through <sysroot>/include.
+    rm -rf "$SYSROOT2/mingw"
 
     echo "=== STAGE 2 COMPLETE ==="
     echo "Win9x-native toolchain at: $STAGE2_PREFIX"
