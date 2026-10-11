@@ -107,6 +107,11 @@ build_stage1() {
     cd "$BUILD_DIR"
     rm -rf "gcc-${GCC_VER}-stage1"
     cp -r "$SOURCES_DIR/gcc-${GCC_VER}" "gcc-${GCC_VER}-stage1"
+    # Patch GCC's float.h to coordinate with mingwrt's via #include_next
+    # (matching _MINGW_FLOAT_H_ guards); mingwrt's -nostdinc CRT build
+    # resolves float.h through -iwithprefixbefore include.
+    patch -d "$BUILD_DIR/gcc-${GCC_VER}-stage1" -p1 -N \
+        < "$SCRIPT_DIR/02-mingw32-float.h.patch" || true
     # download_prerequisites already ran in fetch script, deps are in-tree
     mkdir -p "build-gcc-stage1"
     cd "build-gcc-stage1"
@@ -155,7 +160,7 @@ build_stage1() {
     # for the self-contained stdarg.h/stddef.h.
     GCC_PRIVATE_INC="$STAGE1_PREFIX/lib/gcc/$TARGET/$GCC_VER/include"
     mkdir -p "$GCC_PRIVATE_INC"
-    cp "$SCRIPT_DIR/mingw-fixed/stdarg.h" "$SCRIPT_DIR/mingw-fixed/stddef.h" "$GCC_PRIVATE_INC/"
+    cp "$SCRIPT_DIR/mingw-fixed/stdarg.h" "$SCRIPT_DIR/mingw-fixed/stddef.h" "$SCRIPT_DIR/mingw-fixed/float.h" "$GCC_PRIVATE_INC/"
     # CRT objects compile with -nostdinc and reach _mingw.h via -I .; the
     # Makefile generates _mingw.h / w32api.h at make time. Pre-generate
     # them serially so the parallel build can't race the CRT objects.
@@ -183,7 +188,7 @@ build_stage1() {
     # Stage-2 gcc install clobbered the private include stubs back; re-apply.
     GCC_PRIVATE_INC="$STAGE1_PREFIX/lib/gcc/$TARGET/$GCC_VER/include"
     mkdir -p "$GCC_PRIVATE_INC"
-    cp "$SCRIPT_DIR/mingw-fixed/stdarg.h" "$SCRIPT_DIR/mingw-fixed/stddef.h" "$GCC_PRIVATE_INC/"
+    cp "$SCRIPT_DIR/mingw-fixed/stdarg.h" "$SCRIPT_DIR/mingw-fixed/stddef.h" "$SCRIPT_DIR/mingw-fixed/float.h" "$GCC_PRIVATE_INC/"
     make -j1 _mingw.h w32api.h
     make -j"$JOBS" NTDDI_VERSION=0x04000000
     make install
@@ -346,7 +351,7 @@ build_stage2() {
     # private include dir and pre-generate _mingw.h/w32api.h serially.
     GCC_PRIVATE_INC="$STAGE2_PREFIX/lib/gcc/$TARGET/$GCC_VER/include"
     mkdir -p "$GCC_PRIVATE_INC"
-    cp "$SCRIPT_DIR/mingw-fixed/stdarg.h" "$SCRIPT_DIR/mingw-fixed/stddef.h" "$GCC_PRIVATE_INC/"
+    cp "$SCRIPT_DIR/mingw-fixed/stdarg.h" "$SCRIPT_DIR/mingw-fixed/stddef.h" "$SCRIPT_DIR/mingw-fixed/float.h" "$GCC_PRIVATE_INC/"
     make -j1 _mingw.h w32api.h
     make -j"$JOBS" NTDDI_VERSION=0x04000000
     make install
@@ -356,6 +361,9 @@ build_stage2() {
     cd "$BUILD_DIR"
     rm -rf "gcc-${GCC_VER}-host"
     cp -r "$SOURCES_DIR/gcc-${GCC_VER}" "gcc-${GCC_VER}-host"
+    # Same float.h MinGW coordination patch as Stage 1.
+    patch -d "$BUILD_DIR/gcc-${GCC_VER}-host" -p1 -N \
+        < "$SCRIPT_DIR/02-mingw32-float.h.patch" || true
     # Ensure no in-tree deps (force external libraries)
     rm -rf "gcc-${GCC_VER}-host/gmp" "gcc-${GCC_VER}-host/mpfr" "gcc-${GCC_VER}-host/mpc" "gcc-${GCC_VER}-host/isl"
     mkdir -p "build-gcc-host-stage1"
@@ -394,7 +402,7 @@ build_stage2() {
     # Re-apply the private-include stdarg/stddef after the GCC install.
     GCC_PRIVATE_INC="$STAGE2_PREFIX/lib/gcc/$TARGET/$GCC_VER/include"
     mkdir -p "$GCC_PRIVATE_INC"
-    cp "$SCRIPT_DIR/mingw-fixed/stdarg.h" "$SCRIPT_DIR/mingw-fixed/stddef.h" "$GCC_PRIVATE_INC/"
+    cp "$SCRIPT_DIR/mingw-fixed/stdarg.h" "$SCRIPT_DIR/mingw-fixed/stddef.h" "$SCRIPT_DIR/mingw-fixed/float.h" "$GCC_PRIVATE_INC/"
     make -j1 _mingw.h w32api.h
     make -j"$JOBS" NTDDI_VERSION=0x04000000
     make install

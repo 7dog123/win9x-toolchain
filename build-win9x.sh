@@ -113,6 +113,12 @@ echo "=== [3/8] Building GCC $GCC_VER stage1 ==="
 cd "$BUILD_DIR"
 mkdir -p "build-gcc-stage1"
 cd "build-gcc-stage1"
+# mingwrt's include/float.h forwards to GCC's via #include_next and GCC's
+# should complement it in turn; patch GCC's copy so the pair stays
+# consistent (matching _MINGW_FLOAT_H_ guards). This also lets mingwrt's
+# -nostdinc CRT build resolve float.h through -iwithprefixbefore include.
+patch -d "$SOURCES_DIR/gcc-${GCC_VER}" -p1 -N \
+    < "$SCRIPT_DIR/02-mingw32-float.h.patch" || true
 "$SOURCES_DIR/gcc-${GCC_VER}/configure" \
     --target="$TARGET" \
     --prefix="$PREFIX" \
@@ -174,7 +180,7 @@ cd "$BUILD_DIR/mingwrt-${MINGWRT_VER}"
 # cross-GCC's private include dir (GCC_PRIVATE_INC). Replace the stock
 # #include_next stubs there with the self-contained versions.
 mkdir -p "$GCC_PRIVATE_INC"
-cp "$SCRIPT_DIR/mingw-fixed/stdarg.h" "$SCRIPT_DIR/mingw-fixed/stddef.h" "$GCC_PRIVATE_INC/"
+cp "$SCRIPT_DIR/mingw-fixed/stdarg.h" "$SCRIPT_DIR/mingw-fixed/stddef.h" "$SCRIPT_DIR/mingw-fixed/float.h" "$GCC_PRIVATE_INC/"
 # The CRT compiles run with -nostdinc and reach _mingw.h via -I .; the
 # Makefile generates _mingw.h and w32api.h at make time. Pre-generate
 # them serially so the parallel build can't race the CRT objects.
@@ -207,7 +213,7 @@ make clean || true
 # GCC stage-2 install clobbered the private-include stdarg/stddef back to
 # #include_next stubs; put the self-contained versions back for this build.
 mkdir -p "$GCC_PRIVATE_INC"
-cp "$SCRIPT_DIR/mingw-fixed/stdarg.h" "$SCRIPT_DIR/mingw-fixed/stddef.h" "$GCC_PRIVATE_INC/"
+cp "$SCRIPT_DIR/mingw-fixed/stdarg.h" "$SCRIPT_DIR/mingw-fixed/stddef.h" "$SCRIPT_DIR/mingw-fixed/float.h" "$GCC_PRIVATE_INC/"
 make -j1 _mingw.h w32api.h
 make -j"$JOBS" NTDDI_VERSION=0x04000000
 make install
