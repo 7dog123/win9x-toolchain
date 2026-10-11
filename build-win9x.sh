@@ -15,6 +15,11 @@ PREFIX="$SCRIPT_DIR/toolchain"
 SYSROOT="$PREFIX/$TARGET"
 BUILD_DIR="$SCRIPT_DIR/build"
 SOURCES_DIR="$SCRIPT_DIR/sources"
+# Cross-GCC's own include dir. mingwrt compiles CRT objects with
+# -nostdinc + -iwithprefixbefore include, which points exactly here; the
+# stock stdarg.h/stddef.h in it are #include_next stubs with no mingwrt
+# counterpart, so the self-contained versions must replace them.
+GCC_PRIVATE_INC="$PREFIX/lib/gcc/$TARGET/$GCC_VER/include"
 
 # Parallel jobs
 JOBS=$(nproc)
@@ -165,11 +170,19 @@ cd "$BUILD_DIR/mingwrt-${MINGWRT_VER}"
     --disable-dependency-tracking \
     CFLAGS="$TARGET_CFLAGS" \
     LDFLAGS="$TARGET_LDFLAGS"
+# The CRT compiles use -nostdinc + -iwithprefixbefore include -> the
+# cross-GCC's private include dir (GCC_PRIVATE_INC). Replace the stock
+# #include_next stubs there with the self-contained versions.
+mkdir -p "$GCC_PRIVATE_INC"
+cp "$SCRIPT_DIR/mingw-fixed/stdarg.h" "$SCRIPT_DIR/mingw-fixed/stddef.h" "$GCC_PRIVATE_INC/"
 # The CRT compiles run with -nostdinc and reach _mingw.h via -I .; the
-# Makefile generates _mingw.h and w32api.h as make time. Pre-generate
+# Makefile generates _mingw.h and w32api.h at make time. Pre-generate
 # them serially so the parallel build can't race the CRT objects.
 make -j1 _mingw.h w32api.h
-make -j"$JOBS"
+# mingwrt's Makefile sets NTDDI_VERSION=NTDDI_WINNT4, but that token is
+# undefined in w32api-5.0.2's sdkddkver.h, so WINNTVER() yields 0 and
+# conflicts with our -D_WIN32_WINNT=0x0400. Pin it to the real NT4 value.
+make -j"$JOBS" NTDDI_VERSION=0x04000000
 make install
 echo "mingwrt done"
 
@@ -191,8 +204,12 @@ make clean || true
     --prefix="$SYSROOT" \
     CFLAGS="$TARGET_CFLAGS" \
     LDFLAGS="$TARGET_LDFLAGS"
+# GCC stage-2 install clobbered the private-include stdarg/stddef back to
+# #include_next stubs; put the self-contained versions back for this build.
+mkdir -p "$GCC_PRIVATE_INC"
+cp "$SCRIPT_DIR/mingw-fixed/stdarg.h" "$SCRIPT_DIR/mingw-fixed/stddef.h" "$GCC_PRIVATE_INC/"
 make -j1 _mingw.h w32api.h
-make -j"$JOBS"
+make -j"$JOBS" NTDDI_VERSION=0x04000000
 make install
 echo "mingwrt final done"
 

@@ -150,11 +150,20 @@ build_stage1() {
         --prefix="$SYSROOT1" \
         --disable-dependency-tracking \
         CFLAGS="$HOST_CFLAGS" LDFLAGS="$HOST_LDFLAGS"
+    # mingwrt CRT compiles use -nostdinc + -iwithprefixbefore include ->
+    # the cross-GCC's private include dir; swap its #include_next stubs
+    # for the self-contained stdarg.h/stddef.h.
+    GCC_PRIVATE_INC="$STAGE1_PREFIX/lib/gcc/$TARGET/$GCC_VER/include"
+    mkdir -p "$GCC_PRIVATE_INC"
+    cp "$SCRIPT_DIR/mingw-fixed/stdarg.h" "$SCRIPT_DIR/mingw-fixed/stddef.h" "$GCC_PRIVATE_INC/"
     # CRT objects compile with -nostdinc and reach _mingw.h via -I .; the
     # Makefile generates _mingw.h / w32api.h at make time. Pre-generate
     # them serially so the parallel build can't race the CRT objects.
     make -j1 _mingw.h w32api.h
-    make -j"$JOBS"
+    # NTDDI_WINNT4 is undefined in w32api-5.0.2's sdkddkver.h, making
+    # mingwrt's NTDDI_VERSION spec conflict with -D_WIN32_WINNT=0x0400;
+    # pin NTDDI_VERSION to the real NT4 value.
+    make -j"$JOBS" NTDDI_VERSION=0x04000000
     make install
 
     # ---- 0e: GCC Stage 2 (Full) ----
@@ -171,8 +180,12 @@ build_stage1() {
         --host="$TARGET" \
         --prefix="$SYSROOT1" \
         CFLAGS="$HOST_CFLAGS" LDFLAGS="$HOST_LDFLAGS"
+    # Stage-2 gcc install clobbered the private include stubs back; re-apply.
+    GCC_PRIVATE_INC="$STAGE1_PREFIX/lib/gcc/$TARGET/$GCC_VER/include"
+    mkdir -p "$GCC_PRIVATE_INC"
+    cp "$SCRIPT_DIR/mingw-fixed/stdarg.h" "$SCRIPT_DIR/mingw-fixed/stddef.h" "$GCC_PRIVATE_INC/"
     make -j1 _mingw.h w32api.h
-    make -j"$JOBS"
+    make -j"$JOBS" NTDDI_VERSION=0x04000000
     make install
 
     # ---- Remove in-tree gmp/mpfr/mpc/isl from Stage 1 GCC source tree ----
@@ -328,7 +341,14 @@ build_stage2() {
         --build="$BUILD" --host="$HOST" \
         --prefix="$SYSROOT2" \
         CC="$HOST-gcc" CFLAGS="$HOST_CFLAGS" LDFLAGS="$HOST_LDFLAGS"
-    make -j"$JOBS"
+    # Same -nostdinc + -iwithprefixbefore include handling as Stage 1:
+    # install the self-contained stdarg/stddef into the compiler's
+    # private include dir and pre-generate _mingw.h/w32api.h serially.
+    GCC_PRIVATE_INC="$STAGE2_PREFIX/lib/gcc/$TARGET/$GCC_VER/include"
+    mkdir -p "$GCC_PRIVATE_INC"
+    cp "$SCRIPT_DIR/mingw-fixed/stdarg.h" "$SCRIPT_DIR/mingw-fixed/stddef.h" "$GCC_PRIVATE_INC/"
+    make -j1 _mingw.h w32api.h
+    make -j"$JOBS" NTDDI_VERSION=0x04000000
     make install
 
     # ---- 2d: GCC Stage 1 (host) ----
@@ -371,7 +391,12 @@ build_stage2() {
         --build="$BUILD" --host="$HOST" \
         --prefix="$SYSROOT2" \
         CC="$HOST-gcc" CFLAGS="$HOST_CFLAGS" LDFLAGS="$HOST_LDFLAGS"
-    make -j"$JOBS"
+    # Re-apply the private-include stdarg/stddef after the GCC install.
+    GCC_PRIVATE_INC="$STAGE2_PREFIX/lib/gcc/$TARGET/$GCC_VER/include"
+    mkdir -p "$GCC_PRIVATE_INC"
+    cp "$SCRIPT_DIR/mingw-fixed/stdarg.h" "$SCRIPT_DIR/mingw-fixed/stddef.h" "$GCC_PRIVATE_INC/"
+    make -j1 _mingw.h w32api.h
+    make -j"$JOBS" NTDDI_VERSION=0x04000000
     make install
 
     # ---- 2f: GCC Stage 2 (host, full) ----
