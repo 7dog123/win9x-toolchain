@@ -94,13 +94,14 @@ ln -sfn ../lib "$SYSROOT/mingw/lib"
 ln -sfn ../bin "$SYSROOT/mingw/bin"
 echo "sysroot mingw layout done"
 
-# GCC 6 ships no usable <stdarg.h> for this target (its gcc/include
-# version is a stub doing `#include_next <stdarg.h>`), mingwrt 5.0.2
+# GCC 6 ships no usable <stdarg.h>/<stddef.h> for this target (its
+# gcc/include versions are `#include_next` stubs), mingwrt 5.0.2
 # provides none, and w32api compiles its C stubs with -nostdinc. Install
-# a self-contained one into the sysroot.
+# self-contained ones into the sysroot.
 mkdir -p "$SYSROOT/include"
 cp "$SCRIPT_DIR/mingw-fixed/stdarg.h" "$SYSROOT/include/stdarg.h"
-echo "sysroot stdarg.h installed"
+cp "$SCRIPT_DIR/mingw-fixed/stddef.h" "$SYSROOT/include/stddef.h"
+echo "sysroot stdarg/stddef installed"
 
 # ===== Step 3: GCC Stage 1 (C and C++) =====
 echo "=== [3/8] Building GCC $GCC_VER stage1 ==="
