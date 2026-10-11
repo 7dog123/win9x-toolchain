@@ -165,6 +165,10 @@ cd "$BUILD_DIR/mingwrt-${MINGWRT_VER}"
     --disable-dependency-tracking \
     CFLAGS="$TARGET_CFLAGS" \
     LDFLAGS="$TARGET_LDFLAGS"
+# The CRT compiles run with -nostdinc and reach _mingw.h via -I .; the
+# Makefile generates _mingw.h and w32api.h as make time. Pre-generate
+# them serially so the parallel build can't race the CRT objects.
+make -j1 _mingw.h w32api.h
 make -j"$JOBS"
 make install
 echo "mingwrt done"
@@ -187,6 +191,7 @@ make clean || true
     --prefix="$SYSROOT" \
     CFLAGS="$TARGET_CFLAGS" \
     LDFLAGS="$TARGET_LDFLAGS"
+make -j1 _mingw.h w32api.h
 make -j"$JOBS"
 make install
 echo "mingwrt final done"

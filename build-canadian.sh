@@ -150,6 +150,10 @@ build_stage1() {
         --prefix="$SYSROOT1" \
         --disable-dependency-tracking \
         CFLAGS="$HOST_CFLAGS" LDFLAGS="$HOST_LDFLAGS"
+    # CRT objects compile with -nostdinc and reach _mingw.h via -I .; the
+    # Makefile generates _mingw.h / w32api.h at make time. Pre-generate
+    # them serially so the parallel build can't race the CRT objects.
+    make -j1 _mingw.h w32api.h
     make -j"$JOBS"
     make install
 
@@ -167,6 +171,7 @@ build_stage1() {
         --host="$TARGET" \
         --prefix="$SYSROOT1" \
         CFLAGS="$HOST_CFLAGS" LDFLAGS="$HOST_LDFLAGS"
+    make -j1 _mingw.h w32api.h
     make -j"$JOBS"
     make install
 
