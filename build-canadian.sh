@@ -226,10 +226,12 @@ build_stage1() {
     patch -p1 -N < "$SCRIPT_DIR/04-pthreads-w32-timespec.patch" || true
     make -j"$JOBS" \
         CC="$TARGET-gcc" AR="$TARGET-ar" RC="$TARGET-windres" DLLTOOL="$TARGET-dlltool" \
-        CROSS="$TARGET-" GC=1 clean GC-static
-    mkdir -p "$SYSROOT1/include" "$SYSROOT1/lib"
+        CROSS="$TARGET-" GC=1 clean GC
+    mkdir -p "$SYSROOT1/include" "$SYSROOT1/lib" "$SYSROOT1/bin"
     cp pthread.h sched.h semaphore.h "$SYSROOT1/include/"
+    cp pthreadGC2.dll "$SYSROOT1/bin/"
     cp libpthreadGC2.a "$SYSROOT1/lib/libpthread.a"
+    cp libpthreadGC2.a "$SYSROOT1/lib/libpthread.dll.a"
 
     # ---- 0i: Build HOST dependencies (gmp, mpfr, mpc, isl, libiconv, gettext) ----
     echo "[9/10] Building HOST dependencies (gmp, mpfr, mpc, isl, libiconv, gettext)"
@@ -448,10 +450,12 @@ build_stage2() {
     patch -p1 -N < "$SCRIPT_DIR/04-pthreads-w32-timespec.patch" || true
     make -j"$JOBS" \
         CC="$HOST-gcc" AR="$HOST-ar" RC="$HOST-windres" DLLTOOL="$HOST-dlltool" \
-        CROSS="$HOST-" GC=1 clean GC-static
-    mkdir -p "$SYSROOT2/include" "$SYSROOT2/lib"
+        CROSS="$HOST-" GC=1 clean GC
+    mkdir -p "$SYSROOT2/include" "$SYSROOT2/lib" "$SYSROOT2/bin"
     cp pthread.h sched.h semaphore.h "$SYSROOT2/include/"
+    cp pthreadGC2.dll "$SYSROOT2/bin/"
     cp libpthreadGC2.a "$SYSROOT2/lib/libpthread.a"
+    cp libpthreadGC2.a "$SYSROOT2/lib/libpthread.dll.a"
 
     # ---- 2i: make (host) ----
     echo "[+] make (host=$HOST)"

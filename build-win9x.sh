@@ -250,17 +250,15 @@ make -j"$JOBS" \
     DLLTOOL="$TARGET-dlltool" \
     CROSS="$TARGET-" \
     GC=1 \
-    clean GC-static
+    clean GC
 
-# Install headers and libraries
-mkdir -p "$SYSROOT/include" "$SYSROOT/lib"
+# Install headers, import library and runtime DLL.
+# The 'GC' target builds pthreadGC2.dll and its import library libpthreadGC2.a.
+mkdir -p "$SYSROOT/include" "$SYSROOT/lib" "$SYSROOT/bin"
 cp pthread.h sched.h semaphore.h "$SYSROOT/include/"
+cp pthreadGC2.dll "$SYSROOT/bin/"
 cp libpthreadGC2.a "$SYSROOT/lib/libpthread.a"
-cp pthreadGC2.dll "$SYSROOT/bin/" 2>/dev/null || true
-
-# Also create pthreadGC2.dll.a import lib if needed
-$TARGET-dlltool -d pthreadGC2.def -l "$SYSROOT/lib/libpthread.dll.a" 2>/dev/null || \
-    $TARGET-dlltool --export-all-symbols --output-lib "$SYSROOT/lib/libpthread.dll.a" pthreadGC2.dll 2>/dev/null || true
+cp libpthreadGC2.a "$SYSROOT/lib/libpthread.dll.a"
 
 echo "pthreads-w32 done"
 
