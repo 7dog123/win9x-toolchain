@@ -222,6 +222,8 @@ build_stage1() {
     tar -xf "$SOURCES_DIR/pthreads-w32-${PTHREADS_VER}.tar.gz"
     mv "pthreads-w32-${PTHREADS_VER//./-}-release" "pthreads-w32-stage1"
     cd "pthreads-w32-stage1"
+    # mingwrt 5.0.2 provides struct timespec; teach pthreads-w32 2.9.1.
+    patch -p1 -N < "$SCRIPT_DIR/04-pthreads-w32-timespec.patch" || true
     make -j"$JOBS" \
         CC="$TARGET-gcc" AR="$TARGET-ar" RC="$TARGET-windres" DLLTOOL="$TARGET-dlltool" \
         CROSS="$TARGET-" GC=1 clean GC-static
@@ -442,6 +444,8 @@ build_stage2() {
     tar -xf "$SOURCES_DIR/pthreads-w32-${PTHREADS_VER}.tar.gz"
     mv "pthreads-w32-${PTHREADS_VER//./-}-release" "pthreads-w32-host"
     cd "pthreads-w32-host"
+    # mingwrt 5.0.2 provides struct timespec; teach pthreads-w32 2.9.1.
+    patch -p1 -N < "$SCRIPT_DIR/04-pthreads-w32-timespec.patch" || true
     make -j"$JOBS" \
         CC="$HOST-gcc" AR="$HOST-ar" RC="$HOST-windres" DLLTOOL="$HOST-dlltool" \
         CROSS="$HOST-" GC=1 clean GC-static

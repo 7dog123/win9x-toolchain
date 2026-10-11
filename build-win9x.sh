@@ -235,6 +235,13 @@ rm -rf "pthreads-w32-${PTHREADS_VER//./-}-release"
 tar -xf "$SOURCES_DIR/pthreads-w32-${PTHREADS_VER}.tar.gz"
 cd "pthreads-w32-${PTHREADS_VER//./-}-release"
 
+# mingwrt 5.0.2's <time.h> already defines struct timespec; pthreads-w32
+# 2.9.1 only expects that from __MINGW64__ (and its config.h #undefs
+# HAVE_STRUCT_TIMESPEC for __MINGW32__), so pthread.h would redefine it
+# ('redefinition of struct timespec'). Teach pthreads-w32 that the
+# MinGW.org runtime provides it.
+patch -p1 -N < "$SCRIPT_DIR/04-pthreads-w32-timespec.patch" || true
+
 # Build with MinGW cross-compiler
 make -j"$JOBS" \
     CC="$TARGET-gcc" \
