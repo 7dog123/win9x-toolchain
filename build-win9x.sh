@@ -119,13 +119,15 @@ cd "build-gcc-stage1"
 # -nostdinc CRT build resolve float.h through -iwithprefixbefore include.
 patch -d "$SOURCES_DIR/gcc-${GCC_VER}" -p1 -N \
     < "$SCRIPT_DIR/02-mingw32-float.h.patch" || true
-# libstdc++'s mingw32-w64 config calls GetModuleHandleExW (guard:
-# _GLIBCXX_THREAD_ATEXIT_WIN32), which w32api 5.0.2 neither declares nor
-# does pre-Win2000 Windows export. Gate it on _WIN32_WINNT >= 0x0500 so
-# the Win95 target compiles without that reference (matches the plain
-# mingw32 os_defines.h behavior).
+# The w64 triple selects libstdc++'s mingw32-w64 os_defines.h, which
+# assumes the mingw-w64 runtime/API. Two mismatches with MinGW.org 5.0.2
+# on a Win95 target: (a) it drops _GLIBCXX_HAVE_BROKEN_VSWPRINTF, so the
+# C99 __to_xstring-based to_wstring clashes with mingwrt's C89
+# swprintf(wchar_t*, const wchar_t*, ...); (b) it enables
+# GetModuleHandleExW (needs Win2000+, absent from w32api 5.0.2 and
+# unexported on Win9x). Restore the plain-mingw32 behavior for both.
 patch -d "$SOURCES_DIR/gcc-${GCC_VER}" -p1 -N \
-    < "$SCRIPT_DIR/03-libstdcxx-atexit-win32.patch" || true
+    < "$SCRIPT_DIR/03-mingw32-w64-os-defines.patch" || true
 "$SOURCES_DIR/gcc-${GCC_VER}/configure" \
     --target="$TARGET" \
     --prefix="$PREFIX" \

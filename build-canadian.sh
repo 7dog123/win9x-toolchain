@@ -112,9 +112,9 @@ build_stage1() {
     # resolves float.h through -iwithprefixbefore include.
     patch -d "$BUILD_DIR/gcc-${GCC_VER}-stage1" -p1 -N \
         < "$SCRIPT_DIR/02-mingw32-float.h.patch" || true
-    # libstdc++ GetModuleHandleExW gate (see build-win9x.sh comment).
+    # Adapt libstdc++ mingw32-w64 os_defines.h for MinGW.org/Win9x (see build-win9x.sh).
     patch -d "$BUILD_DIR/gcc-${GCC_VER}-stage1" -p1 -N \
-        < "$SCRIPT_DIR/03-libstdcxx-atexit-win32.patch" || true
+        < "$SCRIPT_DIR/03-mingw32-w64-os-defines.patch" || true
     # download_prerequisites already ran in fetch script, deps are in-tree
     mkdir -p "build-gcc-stage1"
     cd "build-gcc-stage1"
@@ -367,9 +367,9 @@ build_stage2() {
     # Same float.h MinGW coordination patch as Stage 1.
     patch -d "$BUILD_DIR/gcc-${GCC_VER}-host" -p1 -N \
         < "$SCRIPT_DIR/02-mingw32-float.h.patch" || true
-    # libstdc++ GetModuleHandleExW gate (see build-win9x.sh comment).
+    # Adapt libstdc++ mingw32-w64 os_defines.h for MinGW.org/Win9x (see build-win9x.sh).
     patch -d "$BUILD_DIR/gcc-${GCC_VER}-host" -p1 -N \
-        < "$SCRIPT_DIR/03-libstdcxx-atexit-win32.patch" || true
+        < "$SCRIPT_DIR/03-mingw32-w64-os-defines.patch" || true
     # Ensure no in-tree deps (force external libraries)
     rm -rf "gcc-${GCC_VER}-host/gmp" "gcc-${GCC_VER}-host/mpfr" "gcc-${GCC_VER}-host/mpc" "gcc-${GCC_VER}-host/isl"
     mkdir -p "build-gcc-host-stage1"

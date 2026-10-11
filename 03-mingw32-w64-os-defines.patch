@@ -1,6 +1,19 @@
 --- a/libstdc++-v3/config/os/mingw32-w64/os_defines.h
 +++ b/libstdc++-v3/config/os/mingw32-w64/os_defines.h
-@@ -78,10 +78,14 @@
+@@ -62,6 +62,12 @@
+ // See libstdc++/20806.
+ #define _GLIBCXX_HAVE_DOS_BASED_FILESYSTEM 1
+ 
++// See  libstdc++/37522.
++// MinGW.org's runtime declares the C89 swprintf(wchar_t*, const wchar_t*,
++// ...); libstdc++'s C99-based to_wstring would take its address as
++// swprintf(wchar_t*, size_t, const wchar_t*, ...).  Match config/os/mingw32.
++#define _GLIBCXX_HAVE_BROKEN_VSWPRINTF 1
++
+ // See libstdc++/43738
+ // On native windows targets there is no ioctl function. And the existing
+ // ioctlsocket function doesn't work for normal file-descriptors.
+@@ -78,10 +84,14 @@
  #define _GLIBCXX_LLP64 1
  #endif
  
