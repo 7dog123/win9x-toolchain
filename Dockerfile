@@ -28,7 +28,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 WORKDIR /workspace
 
 # Copy build scripts and static helper files
-COPY build-win9x.sh fetch-sources.sh versions.txt mingw-fixed /workspace/mingw-fixed/
+COPY build-win9x.sh fetch-sources.sh versions.txt ./
+COPY mingw-fixed /workspace/mingw-fixed/
 RUN chmod +x build-win9x.sh fetch-sources.sh
 
 # Fetch sources then build
