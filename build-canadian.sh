@@ -95,6 +95,11 @@ build_stage1() {
     ln -sfn ../include "$SYSROOT1/mingw/include"
     ln -sfn ../lib "$SYSROOT1/mingw/lib"
     ln -sfn ../bin "$SYSROOT1/mingw/bin"
+    # GCC 6 ships no usable <stdarg.h> for this target (its gcc/include
+    # version is a `#include_next` stub), mingwrt 5.0.2 provides none,
+    # and w32api compiles its C stubs with -nostdinc.
+    mkdir -p "$SYSROOT1/include"
+    cp "$SCRIPT_DIR/mingw-fixed/stdarg.h" "$SYSROOT1/include/stdarg.h"
 
     # ---- 0c: GCC Stage 1 (C and C++) - IN-TREE DEPENDENCIES ----
     echo "[3/10] GCC Stage 1 (C and C++) - in-tree deps"
@@ -125,13 +130,14 @@ build_stage1() {
     # ---- 0c2: w32api import libraries (cross GCC) ----
     # Headers were installed in step 2; the import libs' C-stub members
     # (ws2_32.c, shell32.c, *-uuid.c) must be i386 COFF and need _X86_
-    # so winnt.h (CONTEXT) compiles. CPPFLAGS adds the cross-compiler's
-    # private include dir for stdarg.h (stubs compile with -nostdinc).
+    # so winnt.h (CONTEXT) compiles. CPPFLAGS adds the sysroot, which
+    # holds the self-contained stdarg.h the stubs need (-nostdinc; the
+    # cross-GCC's own stdarg.h is only a `#include_next` stub).
     echo "[3b] w32api import libs (cross GCC)"
     cd "$BUILD_DIR/mingw-w32api-stage1"
     make -j"$JOBS" \
         CC="$TARGET-gcc" \
-        CPPFLAGS="-D_X86_ -I$($TARGET-gcc -print-file-name=include)" \
+        CPPFLAGS="-D_X86_ -I$SYSROOT1/include" \
         install-w32api-libs
 
     # ---- 0d: mingwrt ----
@@ -292,10 +298,13 @@ build_stage2() {
         --prefix="$SYSROOT2" \
         CC="$HOST-gcc" CFLAGS="$HOST_CFLAGS"
     # -D_X86_ resolves winnt.h's CONTEXT gate for the C-stub import libs
-    # (ws2_32.c etc.), which compile with -nostdinc; add the compiler's
-    # private include dir so stdarg.h is found.
+    # (ws2_32.c etc.), which compile with -nostdinc; -I$SYSROOT2/include
+    # provides the self-contained stdarg.h (the cross-GCC's own is only
+    # a `#include_next` stub).
+    mkdir -p "$SYSROOT2/include"
+    cp "$SCRIPT_DIR/mingw-fixed/stdarg.h" "$SYSROOT2/include/stdarg.h"
     make -j"$JOBS" \
-        CPPFLAGS="-D_X86_ -I$($HOST-gcc -print-file-name=include)" \
+        CPPFLAGS="-D_X86_ -I$SYSROOT2/include" \
         install
     # GCC builds this as a 'mingw' target and expects system headers at
     # <sysroot>/mingw/include (SYSTEM_HEADER_DIR=/mingw/include).

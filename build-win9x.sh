@@ -94,6 +94,14 @@ ln -sfn ../lib "$SYSROOT/mingw/lib"
 ln -sfn ../bin "$SYSROOT/mingw/bin"
 echo "sysroot mingw layout done"
 
+# GCC 6 ships no usable <stdarg.h> for this target (its gcc/include
+# version is a stub doing `#include_next <stdarg.h>`), mingwrt 5.0.2
+# provides none, and w32api compiles its C stubs with -nostdinc. Install
+# a self-contained one into the sysroot.
+mkdir -p "$SYSROOT/include"
+cp "$SCRIPT_DIR/mingw-fixed/stdarg.h" "$SYSROOT/include/stdarg.h"
+echo "sysroot stdarg.h installed"
+
 # ===== Step 3: GCC Stage 1 (C and C++) =====
 echo "=== [3/8] Building GCC $GCC_VER stage1 ==="
 cd "$BUILD_DIR"
@@ -131,13 +139,14 @@ echo "GCC stage1 done"
 # Build the import libs with the cross-GCC from step 3 instead of host
 # gcc: the C-stub members (ws2_32.c, shell32.c, *-uuid.c) must be i386
 # COFF and need _X86_ defined so winnt.h (CONTEXT) compiles. CPPFLAGS
-# adds the cross-compiler's private include dir for stdarg.h because the
-# w32api Makefile compiles the stubs with -nostdinc.
+# adds the sysroot, which holds the self-contained stdarg.h the stubs
+# need (their makefile compiles with -nostdinc; the cross-GCC's own
+# stdarg.h is only a `#include_next` stub).
 echo "=== [4/8] Building w32api-$W32API_VER import libraries (cross GCC) ==="
 cd "$BUILD_DIR/w32api-${W32API_VER}"
 make -j"$JOBS" \
     CC="$TARGET-gcc" \
-    CPPFLAGS="-D_X86_ -I$($TARGET-gcc -print-file-name=include)" \
+    CPPFLAGS="-D_X86_ -I$SYSROOT/include" \
     install-w32api-libs
 echo "w32api libs done"
 
