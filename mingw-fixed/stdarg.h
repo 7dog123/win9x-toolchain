@@ -1,74 +1,127 @@
-/*
- * stdarg.h
- *
- * Provides facilities for stepping through a list of function arguments of
- * an unknown number and type.
- *
- * Adapted from mingw-runtime-1.2 (2001) to the mingwrt-5.0.2 era by the
- * Win9x toolchain: GCC 6 ships only a `#include_next <stdarg.h>`
- * forwarding stub (which needs a real stdarg.h later in the include
- * search path) and mingwrt 5.0.2 provides none, so the sysroot installs
- * a self-contained one.  Definitions are expressed with the compiler's
- * __builtin_va_* builtins so they stay valid for the target's va_list
- * ABI.  The __need___va_list protocol used by mingwrt's stdio.h is
- * honored: in that mode only __gnuc_va_list is defined, _STDARG_H_ is
- * left undefined and va_list / va_* stay out of the way.
- *
- * This file is part of the Mingw32 package.  This source code is offered
- * for use in the public domain; you may use, modify or distribute it
- * freely.
- *
- * $Date: 2001/11/29 04:26:33 $
- */
+/* Copyright (C) 1989-2016 Free Software Foundation, Inc.
 
-#if !defined(_STDARG_H_) || defined(__need___va_list)
+This file is part of GCC.
 
-#include <_mingw.h>
+GCC is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 3, or (at your option)
+any later version.
+
+GCC is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+Under Section 7 of GPL version 3, you are granted additional
+permissions described in the GCC Runtime Library Exception, version
+3.1, as published by the Free Software Foundation.
+
+You should have received a copy of the GNU General Public License and
+a copy of the GCC Runtime Library Exception along with this program;
+see the files COPYING3 and COPYING.RUNTIME respectively.  If not, see
+<http://www.gnu.org/licenses/>.  */
 
 /*
- * Don't do any of this stuff for the resource compiler.
+ * ISO C Standard:  7.15  Variable arguments  <stdarg.h>
  */
-#ifndef RC_INVOKED
 
-#ifdef __need___va_list
-
-/* We're only being asked for the va_list carrier, e.g. by mingwrt's
- * stdio.h.  Expose __gnuc_va_list only; leave _STDARG_H_ undefined so
- * va_list and the va_* macros stay out of the way (ANSI C says stdio.h
- * must not define va_list). */
+#ifndef _STDARG_H
+#ifndef _ANSI_STDARG_H_
+#ifndef __need___va_list
+#define _STDARG_H
+#define _ANSI_STDARG_H_
+#endif /* not __need___va_list */
 #undef __need___va_list
+
+/* Define __gnuc_va_list.  */
 
 #ifndef __GNUC_VA_LIST
 #define __GNUC_VA_LIST
 typedef __builtin_va_list __gnuc_va_list;
 #endif
 
-#else /* __need___va_list */
+/* Define the standard macros for the user,
+   if this invocation was from the user program.  */
+#ifdef _STDARG_H
 
-#define _STDARG_H_
+#define va_start(v,l)	__builtin_va_start(v,l)
+#define va_end(v)	__builtin_va_end(v)
+#define va_arg(v,l)	__builtin_va_arg(v,l)
+#if !defined(__STRICT_ANSI__) || __STDC_VERSION__ + 0 >= 199900L \
+    || __cplusplus + 0 >= 201103L
+#define va_copy(d,s)	__builtin_va_copy(d,s)
+#endif
+#define __va_copy(d,s)	__builtin_va_copy(d,s)
 
-/* I was told that Win NT likes this. */
+/* Define va_list, if desired, from __gnuc_va_list. */
+/* We deliberately do not define va_list when called from
+   stdio.h, because ANSI C says that stdio.h is not supposed to define
+   va_list.  stdio.h needs to have access to that data type, 
+   but must not use that name.  It should use the name __gnuc_va_list,
+   which is safe because it is reserved for the implementation.  */
+
+#ifdef _BSD_VA_LIST
+#undef _BSD_VA_LIST
+#endif
+
+#if defined(__svr4__) || (defined(_SCO_DS) && !defined(__VA_LIST))
+/* SVR4.2 uses _VA_LIST for an internal alias for va_list,
+   so we must avoid testing it and setting it here.
+   SVR4 uses _VA_LIST as a flag in stdarg.h, but we should
+   have no conflict with that.  */
+#ifndef _VA_LIST_
+#define _VA_LIST_
+#ifdef __i860__
+#ifndef _VA_LIST
+#define _VA_LIST va_list
+#endif
+#endif /* __i860__ */
+typedef __gnuc_va_list va_list;
+#ifdef _SCO_DS
+#define __VA_LIST
+#endif
+#endif /* _VA_LIST_ */
+#else /* not __svr4__ || _SCO_DS */
+
+/* The macro _VA_LIST_ is the same thing used by this file in Ultrix.
+   But on BSD NET2 we must not test or define or undef it.
+   (Note that the comments in NET 2's ansi.h
+   are incorrect for _VA_LIST_--see stdio.h!)  */
+#if !defined (_VA_LIST_) || defined (__BSD_NET2__) || defined (____386BSD____) || defined (__bsdi__) || defined (__sequent__) || defined (__FreeBSD__) || defined(WINNT)
+/* The macro _VA_LIST_DEFINED is used in Windows NT 3.5  */
+#ifndef _VA_LIST_DEFINED
+/* The macro _VA_LIST is used in SCO Unix 3.2.  */
+#ifndef _VA_LIST
+/* The macro _VA_LIST_T_H is used in the Bull dpx2  */
+#ifndef _VA_LIST_T_H
+/* The macro __va_list__ is used by BeOS.  */
+#ifndef __va_list__
+typedef __gnuc_va_list va_list;
+#endif /* not __va_list__ */
+#endif /* not _VA_LIST_T_H */
+#endif /* not _VA_LIST */
+#endif /* not _VA_LIST_DEFINED */
+#if !(defined (__BSD_NET2__) || defined (____386BSD____) || defined (__bsdi__) || defined (__sequent__) || defined (__FreeBSD__))
+#define _VA_LIST_
+#endif
+#ifndef _VA_LIST
+#define _VA_LIST
+#endif
 #ifndef _VA_LIST_DEFINED
 #define _VA_LIST_DEFINED
 #endif
-
-#ifndef _VA_LIST
-#define _VA_LIST
-typedef __builtin_va_list va_list;
+#ifndef _VA_LIST_T_H
+#define _VA_LIST_T_H
+#endif
+#ifndef __va_list__
+#define __va_list__
 #endif
 
-#define va_start(ap, last) __builtin_va_start(ap, last)
-#define va_end(ap)         __builtin_va_end(ap)
-#define va_arg(ap, type)   __builtin_va_arg(ap, type)
+#endif /* not _VA_LIST_, except on certain systems */
 
-#if !defined(__STRICT_ANSI__) || (__STDC_VERSION__ + 0 >= 199901L) || \
-    (__cplusplus + 0 >= 201103L)
-#define va_copy(dest, src) __builtin_va_copy(dest, src)
-#endif
-#define __va_copy(dest, src) __builtin_va_copy(dest, src)
+#endif /* not __svr4__ */
 
-#endif /* __need___va_list */
+#endif /* _STDARG_H */
 
-#endif /* Not RC_INVOKED */
-
-#endif /* !_STDARG_H_ || __need___va_list */
+#endif /* not _ANSI_STDARG_H_ */
+#endif /* not _STDARG_H */

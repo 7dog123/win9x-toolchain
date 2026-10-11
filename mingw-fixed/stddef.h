@@ -1,20 +1,29 @@
-/*
- * stddef.h
- *
- * Standard type definitions provided by the C library.
- *
- * Adapted from mingw-runtime-1.2 (2001) to the mingwrt-5.0.2 era by the
- * Win9x toolchain: GCC 6 ships only a `#include_next <stddef.h>`
- * forwarding stub (which needs a real stddef.h later in the include
- * search path) and mingwrt 5.0.2 provides none, so the sysroot installs
- * a self-contained one.  Handles the full __need_* protocol (size_t,
- * ptrdiff_t, wchar_t, wint_t, NULL) and the classic _FOO_T_ guard set.
- *
- * This file is part of the Mingw32 package.  This source code is offered
- * for use in the public domain; you may use, modify or distribute it
- * freely.
- */
+/* Copyright (C) 1989-2016 Free Software Foundation, Inc.
 
+This file is part of GCC.
+
+GCC is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 3, or (at your option)
+any later version.
+
+GCC is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+Under Section 7 of GPL version 3, you are granted additional
+permissions described in the GCC Runtime Library Exception, version
+3.1, as published by the Free Software Foundation.
+
+You should have received a copy of the GNU General Public License and
+a copy of the GCC Runtime Library Exception along with this program;
+see the files COPYING3 and COPYING.RUNTIME respectively.  If not, see
+<http://www.gnu.org/licenses/>.  */
+
+/*
+ * ISO C Standard:  7.17  Common definitions  <stddef.h>
+ */
 #if (!defined(_STDDEF_H) && !defined(_STDDEF_H_) && !defined(_ANSI_STDDEF_H) \
      && !defined(__STDDEF_H__)) \
     || defined(__need_wchar_t) || defined(__need_size_t) \
@@ -31,16 +40,27 @@
 #define _STDDEF_H_
 /* snaroff@next.com says the NeXT needs this.  */
 #define _ANSI_STDDEF_H
-/* Irix 5.1 needs this.  */
-#define __STDDEF_H__
 #endif
 
-#ifndef RC_INVOKED
+#ifndef __sys_stdtypes_h
+/* This avoids lossage on SunOS but only if stdtypes.h comes first.
+   There's no way to win with the other order!  Sun lossage.  */
+
+/* On 4.3bsd-net2, make sure ansi.h is included, so we have
+   one less case to deal with in the following.  */
+#if defined (__BSD_NET2__) || defined (____386BSD____) || (defined (__FreeBSD__) && (__FreeBSD__ < 5)) || defined(__NetBSD__)
+#include <machine/ansi.h>
+#endif
+/* On FreeBSD 5, machine/ansi.h does not exist anymore... */
+#if defined (__FreeBSD__) && (__FreeBSD__ >= 5)
+#include <sys/_types.h>
+#endif
 
 /* In 4.3bsd-net2, machine/ansi.h defines these symbols, which are
    defined if the corresponding type is *not* defined.
-   FreeBSD-2.1 defines _MACHINE_ANSI_H_ instead of _ANSI_H_ */
-#if defined(_ANSI_H_) || defined(_MACHINE_ANSI_H_)
+   FreeBSD-2.1 defines _MACHINE_ANSI_H_ instead of _ANSI_H_.
+   NetBSD defines _I386_ANSI_H_ and _X86_64_ANSI_H_ instead of _ANSI_H_ */
+#if defined(_ANSI_H_) || defined(_MACHINE_ANSI_H_) || defined(_X86_64_ANSI_H_)  || defined(_I386_ANSI_H_)
 #if !defined(_SIZE_T_) && !defined(_BSD_SIZE_T_)
 #define _SIZE_T
 #endif
@@ -67,7 +87,7 @@
 #undef _WCHAR_T_
 #undef _BSD_WCHAR_T_
 #endif
-#endif /* defined(_ANSI_H_) || defined(_MACHINE_ANSI_H_) */
+#endif /* defined(_ANSI_H_) || defined(_MACHINE_ANSI_H_) || defined(_X86_64_ANSI_H_) || defined(_I386_ANSI_H_) */
 
 /* Sequent's header files use _PTRDIFF_T_ in some conflicting way.
    Just ignore it.  */
@@ -75,9 +95,30 @@
 #undef _PTRDIFF_T_
 #endif
 
+/* On VxWorks, <type/vxTypesBase.h> may have defined macros like
+   _TYPE_size_t which will typedef size_t.  fixincludes patched the
+   vxTypesBase.h so that this macro is only defined if _GCC_SIZE_T is
+   not defined, and so that defining this macro defines _GCC_SIZE_T.
+   If we find that the macros are still defined at this point, we must
+   invoke them so that the type is defined as expected.  */
+#if defined (_TYPE_ptrdiff_t) && (defined (__need_ptrdiff_t) || defined (_STDDEF_H_))
+_TYPE_ptrdiff_t;
+#undef _TYPE_ptrdiff_t
+#endif
+#if defined (_TYPE_size_t) && (defined (__need_size_t) || defined (_STDDEF_H_))
+_TYPE_size_t;
+#undef _TYPE_size_t
+#endif
+#if defined (_TYPE_wchar_t) && (defined (__need_wchar_t) || defined (_STDDEF_H_))
+_TYPE_wchar_t;
+#undef _TYPE_wchar_t
+#endif
+
 /* In case nobody has defined these types, but we aren't running under
    GCC 2.00, make sure that __PTRDIFF_TYPE__, __SIZE_TYPE__, and
-   __WCHAR_TYPE__ have reasonable values.  */
+   __WCHAR_TYPE__ have reasonable values.  This can happen if the
+   parts of GCC is compiled by an older compiler, that actually
+   include gstddef.h, such as collect2.  */
 
 /* Signed type of difference of two pointers.  */
 
@@ -92,6 +133,7 @@
 #ifndef _BSD_PTRDIFF_T_
 #ifndef ___int_ptrdiff_t_h
 #ifndef _GCC_PTRDIFF_T
+#ifndef _PTRDIFF_T_DECLARED /* DragonFly */
 #define _PTRDIFF_T
 #define _T_PTRDIFF_
 #define _T_PTRDIFF
@@ -100,10 +142,12 @@
 #define _BSD_PTRDIFF_T_
 #define ___int_ptrdiff_t_h
 #define _GCC_PTRDIFF_T
+#define _PTRDIFF_T_DECLARED
 #ifndef __PTRDIFF_TYPE__
 #define __PTRDIFF_TYPE__ long int
 #endif
 typedef __PTRDIFF_TYPE__ ptrdiff_t;
+#endif /* _PTRDIFF_T_DECLARED */
 #endif /* _GCC_PTRDIFF_T */
 #endif /* ___int_ptrdiff_t_h */
 #endif /* _BSD_PTRDIFF_T_ */
@@ -124,6 +168,7 @@ typedef __PTRDIFF_TYPE__ ptrdiff_t;
    or if we want this type in particular.  */
 #if defined (_STDDEF_H) || defined (__need_size_t)
 #ifndef __size_t__	/* BeOS */
+#ifndef __SIZE_T__	/* Cray Unicos/Mk */
 #ifndef _SIZE_T	/* in case <sys/types.h> has defined it. */
 #ifndef _SYS_SIZE_T_H
 #ifndef _T_SIZE_
@@ -133,11 +178,14 @@ typedef __PTRDIFF_TYPE__ ptrdiff_t;
 #ifndef _BSD_SIZE_T_
 #ifndef _SIZE_T_DEFINED_
 #ifndef _SIZE_T_DEFINED
+#ifndef _BSD_SIZE_T_DEFINED_	/* Darwin */
+#ifndef _SIZE_T_DECLARED	/* FreeBSD 5 */
 #ifndef ___int_size_t_h
 #ifndef _GCC_SIZE_T
 #ifndef _SIZET_
 #ifndef __size_t
 #define __size_t__	/* BeOS */
+#define __SIZE_T__	/* Cray Unicos/Mk */
 #define _SIZE_T
 #define _SYS_SIZE_T_H
 #define _T_SIZE_
@@ -147,10 +195,20 @@ typedef __PTRDIFF_TYPE__ ptrdiff_t;
 #define _BSD_SIZE_T_
 #define _SIZE_T_DEFINED_
 #define _SIZE_T_DEFINED
+#define _BSD_SIZE_T_DEFINED_	/* Darwin */
+#define _SIZE_T_DECLARED	/* FreeBSD 5 */
 #define ___int_size_t_h
 #define _GCC_SIZE_T
 #define _SIZET_
+#if (defined (__FreeBSD__) && (__FreeBSD__ >= 5)) \
+  || defined(__DragonFly__) \
+  || defined(__FreeBSD_kernel__)
+/* __size_t is a typedef on FreeBSD 5, must not trash it. */
+#elif defined (__VMS__)
+/* __size_t is also a typedef on VMS.  */
+#else
 #define __size_t
+#endif
 #ifndef __SIZE_TYPE__
 #define __SIZE_TYPE__ long unsigned int
 #endif
@@ -164,6 +222,8 @@ typedef long ssize_t;
 #endif /* _SIZET_ */
 #endif /* _GCC_SIZE_T */
 #endif /* ___int_size_t_h */
+#endif /* _SIZE_T_DECLARED */
+#endif /* _BSD_SIZE_T_DEFINED_ */
 #endif /* _SIZE_T_DEFINED */
 #endif /* _SIZE_T_DEFINED_ */
 #endif /* _BSD_SIZE_T_ */
@@ -173,9 +233,11 @@ typedef long ssize_t;
 #endif /* _T_SIZE_ */
 #endif /* _SYS_SIZE_T_H */
 #endif /* _SIZE_T */
+#endif /* __SIZE_T__ */
 #endif /* __size_t__ */
 #undef	__need_size_t
 #endif /* _STDDEF_H or __need_size_t.  */
+
 
 /* Wide character type.
    Locale-writers should change this as necessary to
@@ -186,12 +248,16 @@ typedef long ssize_t;
    or if we want this type in particular.  */
 #if defined (_STDDEF_H) || defined (__need_wchar_t)
 #ifndef __wchar_t__	/* BeOS */
+#ifndef __WCHAR_T__	/* Cray Unicos/Mk */
 #ifndef _WCHAR_T
 #ifndef _T_WCHAR_
 #ifndef _T_WCHAR
 #ifndef __WCHAR_T
 #ifndef _WCHAR_T_
 #ifndef _BSD_WCHAR_T_
+#ifndef _BSD_WCHAR_T_DEFINED_    /* Darwin */
+#ifndef _BSD_RUNE_T_DEFINED_	/* Darwin */
+#ifndef _WCHAR_T_DECLARED /* FreeBSD 5 */
 #ifndef _WCHAR_T_DEFINED_
 #ifndef _WCHAR_T_DEFINED
 #ifndef _WCHAR_T_H
@@ -199,6 +265,7 @@ typedef long ssize_t;
 #ifndef __INT_WCHAR_T_H
 #ifndef _GCC_WCHAR_T
 #define __wchar_t__	/* BeOS */
+#define __WCHAR_T__	/* Cray Unicos/Mk */
 #define _WCHAR_T
 #define _T_WCHAR_
 #define _T_WCHAR
@@ -211,6 +278,48 @@ typedef long ssize_t;
 #define ___int_wchar_t_h
 #define __INT_WCHAR_T_H
 #define _GCC_WCHAR_T
+#define _WCHAR_T_DECLARED
+
+/* On BSD/386 1.1, at least, machine/ansi.h defines _BSD_WCHAR_T_
+   instead of _WCHAR_T_, and _BSD_RUNE_T_ (which, unlike the other
+   symbols in the _FOO_T_ family, stays defined even after its
+   corresponding type is defined).  If we define wchar_t, then we
+   must undef _WCHAR_T_; for BSD/386 1.1 (and perhaps others), if
+   we undef _WCHAR_T_, then we must also define rune_t, since 
+   headers like runetype.h assume that if machine/ansi.h is included,
+   and _BSD_WCHAR_T_ is not defined, then rune_t is available.
+   machine/ansi.h says, "Note that _WCHAR_T_ and _RUNE_T_ must be of
+   the same type." */
+#ifdef _BSD_WCHAR_T_
+#undef _BSD_WCHAR_T_
+#ifdef _BSD_RUNE_T_
+#if !defined (_ANSI_SOURCE) && !defined (_POSIX_SOURCE)
+typedef _BSD_RUNE_T_ rune_t;
+#define _BSD_WCHAR_T_DEFINED_
+#define _BSD_RUNE_T_DEFINED_	/* Darwin */
+#if defined (__FreeBSD__) && (__FreeBSD__ < 5)
+/* Why is this file so hard to maintain properly?  In contrast to
+   the comment above regarding BSD/386 1.1, on FreeBSD for as long
+   as the symbol has existed, _BSD_RUNE_T_ must not stay defined or
+   redundant typedefs will occur when stdlib.h is included after this file. */
+#undef _BSD_RUNE_T_
+#endif
+#endif
+#endif
+#endif
+/* FreeBSD 5 can't be handled well using "traditional" logic above
+   since it no longer defines _BSD_RUNE_T_ yet still desires to export
+   rune_t in some cases... */
+#if defined (__FreeBSD__) && (__FreeBSD__ >= 5)
+#if !defined (_ANSI_SOURCE) && !defined (_POSIX_SOURCE)
+#if __BSD_VISIBLE
+#ifndef _RUNE_T_DECLARED
+typedef __rune_t        rune_t;
+#define _RUNE_T_DECLARED
+#endif
+#endif
+#endif
+#endif
 
 #ifndef __WCHAR_TYPE__
 #define __WCHAR_TYPE__ int
@@ -224,17 +333,21 @@ typedef __WCHAR_TYPE__ wchar_t;
 #endif
 #endif
 #endif
+#endif /* _WCHAR_T_DECLARED */
+#endif /* _BSD_RUNE_T_DEFINED_ */
 #endif
 #endif
 #endif
 #endif
 #endif
 #endif
+#endif
+#endif /* __WCHAR_T__ */
 #endif /* __wchar_t__ */
 #undef	__need_wchar_t
 #endif /* _STDDEF_H or __need_wchar_t.  */
 
-#if defined (_STDDEF_H) || defined (__need_wint_t)
+#if defined (__need_wint_t)
 #ifndef _WINT_T
 #define _WINT_T
 
@@ -246,7 +359,41 @@ typedef __WINT_TYPE__ wint_t;
 #undef __need_wint_t
 #endif
 
-#endif /* RC_INVOKED */
+/*  In 4.3bsd-net2, leave these undefined to indicate that size_t, etc.
+    are already defined.  */
+/*  BSD/OS 3.1 and FreeBSD [23].x require the MACHINE_ANSI_H check here.  */
+/*  NetBSD 5 requires the I386_ANSI_H and X86_64_ANSI_H checks here.  */
+#if defined(_ANSI_H_) || defined(_MACHINE_ANSI_H_) || defined(_X86_64_ANSI_H_) || defined(_I386_ANSI_H_)
+/*  The references to _GCC_PTRDIFF_T_, _GCC_SIZE_T_, and _GCC_WCHAR_T_
+    are probably typos and should be removed before 2.8 is released.  */
+#ifdef _GCC_PTRDIFF_T_
+#undef _PTRDIFF_T_
+#undef _BSD_PTRDIFF_T_
+#endif
+#ifdef _GCC_SIZE_T_
+#undef _SIZE_T_
+#undef _BSD_SIZE_T_
+#endif
+#ifdef _GCC_WCHAR_T_
+#undef _WCHAR_T_
+#undef _BSD_WCHAR_T_
+#endif
+/*  The following ones are the real ones.  */
+#ifdef _GCC_PTRDIFF_T
+#undef _PTRDIFF_T_
+#undef _BSD_PTRDIFF_T_
+#endif
+#ifdef _GCC_SIZE_T
+#undef _SIZE_T_
+#undef _BSD_SIZE_T_
+#endif
+#ifdef _GCC_WCHAR_T
+#undef _WCHAR_T_
+#undef _BSD_WCHAR_T_
+#endif
+#endif /* _ANSI_H_ || _MACHINE_ANSI_H_ || _X86_64_ANSI_H_ || _I386_ANSI_H_ */
+
+#endif /* __sys_stdtypes_h */
 
 /* A null pointer constant.  */
 
@@ -255,16 +402,40 @@ typedef __WINT_TYPE__ wint_t;
 #ifdef __GNUG__
 #define NULL __null
 #else   /* G++ */
+#ifndef __cplusplus
 #define NULL ((void *)0)
+#else   /* C++ */
+#define NULL 0
+#endif  /* C++ */
 #endif  /* G++ */
 #endif	/* NULL not defined and <stddef.h> or need NULL.  */
 #undef	__need_NULL
 
 #ifdef _STDDEF_H
 
-/* Offset of member MEMBER in a struct of type TYPE.  */
+/* Offset of member MEMBER in a struct of type TYPE. */
+#define offsetof(TYPE, MEMBER) __builtin_offsetof (TYPE, MEMBER)
 
-#define offsetof(TYPE, MEMBER) __builtin_offsetof(TYPE, MEMBER)
+#if (defined (__STDC_VERSION__) && __STDC_VERSION__ >= 201112L) \
+  || (defined(__cplusplus) && __cplusplus >= 201103L)
+#ifndef _GCC_MAX_ALIGN_T
+#define _GCC_MAX_ALIGN_T
+/* Type whose alignment is supported in every context and is at least
+   as great as that of any standard type not using alignment
+   specifiers.  */
+typedef struct {
+  long long __max_align_ll __attribute__((__aligned__(__alignof__(long long))));
+  long double __max_align_ld __attribute__((__aligned__(__alignof__(long double))));
+} max_align_t;
+#endif
+#endif /* C11 or C++11.  */
+
+#if defined(__cplusplus) && __cplusplus >= 201103L
+#ifndef _GXX_NULLPTR_T
+#define _GXX_NULLPTR_T
+  typedef decltype(nullptr) nullptr_t;
+#endif
+#endif /* C++11.  */
 
 #endif /* _STDDEF_H was defined this time */
 

@@ -119,6 +119,13 @@ cd "build-gcc-stage1"
 # -nostdinc CRT build resolve float.h through -iwithprefixbefore include.
 patch -d "$SOURCES_DIR/gcc-${GCC_VER}" -p1 -N \
     < "$SCRIPT_DIR/02-mingw32-float.h.patch" || true
+# libstdc++'s mingw32-w64 config calls GetModuleHandleExW (guard:
+# _GLIBCXX_THREAD_ATEXIT_WIN32), which w32api 5.0.2 neither declares nor
+# does pre-Win2000 Windows export. Gate it on _WIN32_WINNT >= 0x0500 so
+# the Win95 target compiles without that reference (matches the plain
+# mingw32 os_defines.h behavior).
+patch -d "$SOURCES_DIR/gcc-${GCC_VER}" -p1 -N \
+    < "$SCRIPT_DIR/03-libstdcxx-atexit-win32.patch" || true
 "$SOURCES_DIR/gcc-${GCC_VER}/configure" \
     --target="$TARGET" \
     --prefix="$PREFIX" \

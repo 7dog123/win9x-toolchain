@@ -28,7 +28,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 WORKDIR /workspace
 
 # Copy build scripts and static helper files
-COPY build-win9x.sh fetch-sources.sh versions.txt 02-mingw32-float.h.patch ./
+COPY build-win9x.sh fetch-sources.sh versions.txt *.patch ./
 COPY mingw-fixed /workspace/mingw-fixed/
 RUN chmod +x build-win9x.sh fetch-sources.sh
 

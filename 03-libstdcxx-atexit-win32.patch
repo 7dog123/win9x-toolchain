@@ -1,0 +1,19 @@
+--- a/libstdc++-v3/config/os/mingw32-w64/os_defines.h
++++ b/libstdc++-v3/config/os/mingw32-w64/os_defines.h
+@@ -78,10 +78,14 @@
+ #define _GLIBCXX_LLP64 1
+ #endif
+ 
+-// Enable use of GetModuleHandleEx (requires Windows XP/2003) in
++// Enable use of GetModuleHandleExW (requires Windows 2000+) in
+ // __cxa_thread_atexit to prevent modules from being unloaded before
+-// their dtors are called
++// their dtors are called. Disabled for pre-Windows-2000 targets
++// (Win9x/NT4): w32api 5.0.2 does not declare GetModuleHandleExW, and
++// older Windows does not export it, so libstdc++ must not reference it.
++#if defined (_WIN32_WINNT) && _WIN32_WINNT >= 0x0500
+ #define _GLIBCXX_THREAD_ATEXIT_WIN32 1
++#endif
+ 
+ // See libstdc++/59807
+ #define _GTHREAD_USE_MUTEX_INIT_FUNC 1

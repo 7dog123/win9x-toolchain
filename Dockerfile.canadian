@@ -25,7 +25,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /workspace
 
-COPY versions-canadian.txt fetch-canadian.sh build-canadian.sh 02-mingw32-float.h.patch ./
+COPY versions-canadian.txt fetch-canadian.sh build-canadian.sh *.patch ./
 COPY mingw-fixed /workspace/mingw-fixed/
 
 RUN chmod +x fetch-canadian.sh build-canadian.sh
