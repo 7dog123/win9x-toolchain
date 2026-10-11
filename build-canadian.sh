@@ -88,6 +88,13 @@ build_stage1() {
     cd "mingw-w32api-stage1"
     ./configure --host="$TARGET" --prefix="$SYSROOT1"
     make -j"$JOBS" install-headers
+    # GCC builds this as a 'mingw' target and expects system headers at
+    # <sysroot>/mingw/include (SYSTEM_HEADER_DIR=/mingw/include), both
+    # for fixincludes during the GCC build and for target compiles.
+    mkdir -p "$SYSROOT1/mingw"
+    ln -sfn ../include "$SYSROOT1/mingw/include"
+    ln -sfn ../lib "$SYSROOT1/mingw/lib"
+    ln -sfn ../bin "$SYSROOT1/mingw/bin"
 
     # ---- 0c: GCC Stage 1 (C and C++) - IN-TREE DEPENDENCIES ----
     echo "[3/10] GCC Stage 1 (C and C++) - in-tree deps"
@@ -290,6 +297,12 @@ build_stage2() {
     make -j"$JOBS" \
         CPPFLAGS="-D_X86_ -I$($HOST-gcc -print-file-name=include)" \
         install
+    # GCC builds this as a 'mingw' target and expects system headers at
+    # <sysroot>/mingw/include (SYSTEM_HEADER_DIR=/mingw/include).
+    mkdir -p "$SYSROOT2/mingw"
+    ln -sfn ../include "$SYSROOT2/mingw/include"
+    ln -sfn ../lib "$SYSROOT2/mingw/lib"
+    ln -sfn ../bin "$SYSROOT2/mingw/bin"
 
     # ---- 2c: mingwrt (host) ----
     # Tree was already extracted as a sibling in step 2 (w32api needs it).

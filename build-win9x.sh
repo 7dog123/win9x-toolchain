@@ -84,6 +84,16 @@ cd "w32api-${W32API_VER}"
 make -j"$JOBS" install-headers
 echo "w32api headers done"
 
+# GCC builds this as a 'mingw' target and expects system headers at
+# <sysroot>/mingw/include (SYSTEM_HEADER_DIR=/mingw/include), both for
+# fixincludes during the GCC build and for target compiles. Expose the
+# canonical mingw layout alongside <sysroot>/include and <sysroot>/lib.
+mkdir -p "$SYSROOT/mingw"
+ln -sfn ../include "$SYSROOT/mingw/include"
+ln -sfn ../lib "$SYSROOT/mingw/lib"
+ln -sfn ../bin "$SYSROOT/mingw/bin"
+echo "sysroot mingw layout done"
+
 # ===== Step 3: GCC Stage 1 (C and C++) =====
 echo "=== [3/8] Building GCC $GCC_VER stage1 ==="
 cd "$BUILD_DIR"
