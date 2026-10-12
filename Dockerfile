@@ -50,9 +50,14 @@ RUN sed -i 's|http://deb.debian.org/debian|http://archive.debian.org/debian|g' /
     echo 'Acquire::Check-Valid-Until "false";' > /etc/apt/apt.conf.d/99no-check-valid-until
 
 # Install runtime deps: wine (to run Win9x binaries on Linux) + make (for building on Linux)
+# plus wget, git and pkg-config so libraries can be fetched/built against the
+# target toolchain (the target-prefixed pkg-config wrapper in bin/ backs onto it).
 RUN apt-get update && apt-get install -y --no-install-recommends \
     wine \
     make \
+    wget \
+    git \
+    pkg-config \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy toolchain from builder
